@@ -1,0 +1,558 @@
+{
+  "name": "Roey - קליניקת אורה · סוכן ↔ CRM",
+  "nodes": [
+    {
+      "id": "-80-260",
+      "name": "הערה · מסלול א",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -80,
+        -260
+      ],
+      "parameters": {
+        "content": "## מסלול א · פתיחת קריאת שירות\nהסוכן שולח שם, טלפון ותיאור. Supabase מחפש לקוחה לפי טלפון (או יוצר), פותח קריאה בסטטוס **חדשה** ומחזיר מספר.\nתשובה עם `ok: true` רק אם חזר מספר קריאה אמיתי. כל כשל מחזיר `ok: false`, והסוכן לא מאשר.",
+        "height": 220,
+        "width": 1260,
+        "color": 5
+      }
+    },
+    {
+      "id": "Webhook00",
+      "name": "Webhook · פתיחת קריאה",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "roey-ora-create-ticket",
+        "authentication": "headerAuth",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "LhQdbKRi7qwAQxCC",
+          "name": "Roey - CloudChat webhook key"
+        }
+      },
+      "webhookId": "6f1d2a40-0c55-4c2e-9b1e-0a0c4ea7e001"
+    },
+    {
+      "id": "2200",
+      "name": "בדיקת קלט · פנייה",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        220,
+        0
+      ],
+      "parameters": {
+        "jsCode": "const toLocalPhone = (s) => {\n  let d = String(s ?? '').replace(/\\D/g, '');\n  if (d.startsWith('00972')) d = '0' + d.slice(5);\n  else if (d.startsWith('972')) d = '0' + d.slice(3);\n  return /^0(5|7)\\d{8}$/.test(d) || /^0[2-489]\\d{7}$/.test(d) ? d : null;\n};\nconst body = $input.first().json.body || {};\nconst name = String(body.name ?? '').trim();\nconst phone = toLocalPhone(body.phone);\nconst description = String(body.description ?? '').trim();\nconst missing = [];\nif (!name) missing.push('name');\nif (!phone) missing.push('phone');\nif (!description) missing.push('description');\nreturn [{ json: { valid: missing.length === 0, missing, name, phone, description, request_type: String(body.request_type ?? '').trim() } }];"
+      }
+    },
+    {
+      "id": "4400",
+      "name": "הקלט תקין? · פנייה",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        440,
+        0
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "c0ffee00-0000-4000-8000-000000000001",
+              "leftValue": "={{ $json.valid }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "Supabase660-80",
+      "name": "Supabase · פתיחת קריאה",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        660,
+        -80
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "https://sepxjnntftgzgjfadbgn.supabase.co/rest/v1/rpc/agent_create_ticket",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "sb_publishable_-LWWlSYJW0-bftUJ8YcEzA_GkJmtjr-"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ p_name: $json.name, p_phone: $json.phone, p_description: ($json.request_type ? '[' + $json.request_type + '] ' : '') + $json.description }) }}",
+        "options": {
+          "timeout": 15000
+        }
+      },
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "Cc2m5CGFkJs0bCvH",
+          "name": "Roey - קליניקת אורה · מפתח CRM"
+        }
+      },
+      "onError": "continueErrorOutput",
+      "retryOnFail": true,
+      "maxTries": 2,
+      "waitBetweenTries": 1000
+    },
+    {
+      "id": "900-140",
+      "name": "תשובה · פנייה",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        900,
+        -140
+      ],
+      "parameters": {
+        "jsCode": "const r = $input.first().json;\n// Confirm only when the database returned a real ticket number (exam 5a: never report a ticket that was not created)\nif (r && r.ok === true && Number.isInteger(r.ticket_number)) {\n  return [{ json: { response: {\n    ok: true,\n    ticket_number: r.ticket_number,\n    ticket_id: r.ticket_id,\n    status: 'חדשה',\n    customer_created: r.customer_created === true,\n    message: 'הפנייה נשמרה ב-CRM. מספר פנייה ' + r.ticket_number + '.'\n  } } }];\n}\nreturn [{ json: { response: {\n  ok: false,\n  error: r?.error || 'crm_rejected',\n  message: 'הפנייה לא נשמרה. אסור לומר ללקוחה שנפתחה פנייה.'\n} } }];"
+      }
+    },
+    {
+      "id": "90020",
+      "name": "כשל · פנייה",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        900,
+        20
+      ],
+      "parameters": {
+        "jsCode": "return [{ json: { response: { ok: false, error: 'crm_unreachable', message: \"ה-CRM לא זמין כרגע. הפנייה לא נשמרה. אסור לומר ללקוחה שנפתחה פנייה.\" } } }];"
+      }
+    },
+    {
+      "id": "660120",
+      "name": "קלט חסר · פנייה",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        660,
+        120
+      ],
+      "parameters": {
+        "jsCode": "const v = $input.first().json;\nreturn [{ json: { response: { ok: false, error: 'invalid_input', missing: v.missing || ['phone'], message: \"חסרים פרטים (שם, טלפון תקין או תיאור). הפנייה לא נשמרה.\" } } }];"
+      }
+    },
+    {
+      "id": "11200",
+      "name": "החזרה לסוכן · פנייה",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        1120,
+        0
+      ],
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify($json.response) }}",
+        "options": {}
+      }
+    },
+    {
+      "id": "-80300",
+      "name": "הערה · מסלול ב",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -80,
+        300
+      ],
+      "parameters": {
+        "content": "## מסלול ב · התור הבא של הלקוחה\nהסוכן שולח טלפון. Supabase מזהה את הלקוחה ומחזיר את התור הקרוב בעתיד **שאינו מבוטל**: תאריך, יום, שעה וסוג טיפול.\nאין תור: \"אין תור עתידי ברשומות שנבדקו\". אין לקוחה: אומרים זאת, בלי לנחש.",
+        "height": 220,
+        "width": 1260,
+        "color": 4
+      }
+    },
+    {
+      "id": "Webhook0560",
+      "name": "Webhook · התור הבא",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        0,
+        560
+      ],
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "roey-ora-next-appointment",
+        "authentication": "headerAuth",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "LhQdbKRi7qwAQxCC",
+          "name": "Roey - CloudChat webhook key"
+        }
+      },
+      "webhookId": "6f1d2a40-0c55-4c2e-9b1e-0a0ce7a99002"
+    },
+    {
+      "id": "220560",
+      "name": "בדיקת קלט · תור",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        220,
+        560
+      ],
+      "parameters": {
+        "jsCode": "const toLocalPhone = (s) => {\n  let d = String(s ?? '').replace(/\\D/g, '');\n  if (d.startsWith('00972')) d = '0' + d.slice(5);\n  else if (d.startsWith('972')) d = '0' + d.slice(3);\n  return /^0(5|7)\\d{8}$/.test(d) || /^0[2-489]\\d{7}$/.test(d) ? d : null;\n};\nconst body = $input.first().json.body || {};\nconst phone = toLocalPhone(body.phone);\nreturn [{ json: { valid: Boolean(phone), phone } }];"
+      }
+    },
+    {
+      "id": "440560",
+      "name": "הקלט תקין? · תור",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        440,
+        560
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "c0ffee00-0000-4000-8000-000000000001",
+              "leftValue": "={{ $json.valid }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "Supabase660480",
+      "name": "Supabase · התור הבא",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        660,
+        480
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "https://sepxjnntftgzgjfadbgn.supabase.co/rest/v1/rpc/agent_next_appointment",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "sb_publishable_-LWWlSYJW0-bftUJ8YcEzA_GkJmtjr-"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ p_phone: $json.phone }) }}",
+        "options": {
+          "timeout": 15000
+        }
+      },
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "Cc2m5CGFkJs0bCvH",
+          "name": "Roey - קליניקת אורה · מפתח CRM"
+        }
+      },
+      "onError": "continueErrorOutput",
+      "retryOnFail": true,
+      "maxTries": 2,
+      "waitBetweenTries": 1000
+    },
+    {
+      "id": "900420",
+      "name": "תשובה · תור",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        900,
+        420
+      ],
+      "parameters": {
+        "jsCode": "const r = $input.first().json;\nlet response;\nif (!r || r.ok !== true) {\n  response = { ok: false, error: r?.error || 'crm_error', message: 'לא ניתן לבדוק כרגע. אין לנחש תור.' };\n} else if (!r.customer_found) {\n  response = { ok: true, customer_found: false, has_appointment: false, message: 'לא נמצאה לקוחה עם מספר הטלפון הזה ברשומות.' };\n} else if (!r.has_appointment) {\n  response = { ok: true, customer_found: true, has_appointment: false, first_name: r.first_name, message: 'אין תור עתידי ברשומות שנבדקו.' };\n} else {\n  response = {\n    ok: true, customer_found: true, has_appointment: true,\n    first_name: r.first_name, weekday: r.weekday, date: r.date, time: r.time,\n    treatment: r.treatment, therapist: r.therapist || null,\n    message: 'התור הבא: יום ' + r.weekday + ', ' + r.date + ' בשעה ' + r.time + ', ' + r.treatment + '.'\n  };\n}\nreturn [{ json: { response } }];"
+      }
+    },
+    {
+      "id": "900580",
+      "name": "כשל · תור",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        900,
+        580
+      ],
+      "parameters": {
+        "jsCode": "return [{ json: { response: { ok: false, error: 'crm_unreachable', message: \"לא ניתן לבדוק כרגע. אין לנחש תור.\" } } }];"
+      }
+    },
+    {
+      "id": "660680",
+      "name": "קלט חסר · תור",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        660,
+        680
+      ],
+      "parameters": {
+        "jsCode": "const v = $input.first().json;\nreturn [{ json: { response: { ok: false, error: 'invalid_input', missing: v.missing || ['phone'], message: \"חסר מספר טלפון תקין.\" } } }];"
+      }
+    },
+    {
+      "id": "1120560",
+      "name": "החזרה לסוכן · תור",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        1120,
+        560
+      ],
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify($json.response) }}",
+        "options": {}
+      }
+    }
+  ],
+  "connections": {
+    "Webhook · פתיחת קריאה": {
+      "main": [
+        [
+          {
+            "node": "בדיקת קלט · פנייה",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "בדיקת קלט · פנייה": {
+      "main": [
+        [
+          {
+            "node": "הקלט תקין? · פנייה",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "הקלט תקין? · פנייה": {
+      "main": [
+        [
+          {
+            "node": "Supabase · פתיחת קריאה",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "קלט חסר · פנייה",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Supabase · פתיחת קריאה": {
+      "main": [
+        [
+          {
+            "node": "תשובה · פנייה",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "כשל · פנייה",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "תשובה · פנייה": {
+      "main": [
+        [
+          {
+            "node": "החזרה לסוכן · פנייה",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "כשל · פנייה": {
+      "main": [
+        [
+          {
+            "node": "החזרה לסוכן · פנייה",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "קלט חסר · פנייה": {
+      "main": [
+        [
+          {
+            "node": "החזרה לסוכן · פנייה",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook · התור הבא": {
+      "main": [
+        [
+          {
+            "node": "בדיקת קלט · תור",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "בדיקת קלט · תור": {
+      "main": [
+        [
+          {
+            "node": "הקלט תקין? · תור",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "הקלט תקין? · תור": {
+      "main": [
+        [
+          {
+            "node": "Supabase · התור הבא",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "קלט חסר · תור",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Supabase · התור הבא": {
+      "main": [
+        [
+          {
+            "node": "תשובה · תור",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "כשל · תור",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "תשובה · תור": {
+      "main": [
+        [
+          {
+            "node": "החזרה לסוכן · תור",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "כשל · תור": {
+      "main": [
+        [
+          {
+            "node": "החזרה לסוכן · תור",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "קלט חסר · תור": {
+      "main": [
+        [
+          {
+            "node": "החזרה לסוכן · תור",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "saveDataSuccessExecution": "all",
+    "saveDataErrorExecution": "all"
+  }
+}
