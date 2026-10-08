@@ -5,7 +5,7 @@ import { useActionState, useState } from "react";
 import { AlertTriangle } from "lucide-react";
 import { saveAppointment } from "./actions";
 import { Field, FormError } from "@/components/ui";
-import { SubmitButton } from "@/components/client";
+import { SubmitButton, submitKeepingFields } from "@/components/client";
 import { CustomerPicker } from "@/components/customer-picker";
 import type { CustomerOption } from "@/app/(app)/customers/actions";
 import { appointmentStatus, cancelReason } from "@/lib/labels";
@@ -42,7 +42,7 @@ export function AppointmentForm({
   returnTo?: string;
   readOnly?: boolean;
 }) {
-  const [state, action] = useActionState(saveAppointment, null);
+  const [state, action, pending] = useActionState(saveAppointment, null);
   const fe = state?.fieldErrors ?? {};
   const [treatmentId, setTreatmentId] = useState<number | "">(initial.treatment_id ?? "");
   const [duration, setDuration] = useState<number | "">(initial.duration_minutes ?? "");
@@ -54,7 +54,7 @@ export function AppointmentForm({
   const hoursWarning = openingHoursWarning(date, time, Number(duration) || 0);
 
   return (
-    <form action={action} className="card flex flex-col gap-4 p-4 sm:p-6" noValidate>
+    <form onSubmit={submitKeepingFields(action)} className="card flex flex-col gap-4 p-4 sm:p-6" noValidate>
       {initial.id && <input type="hidden" name="id" value={initial.id} />}
       {returnTo && <input type="hidden" name="return_to" value={returnTo} />}
       <FormError message={state?.error} />
@@ -152,7 +152,7 @@ export function AppointmentForm({
 
       {!readOnly && (
         <div className="flex flex-wrap gap-2 border-t border-line pt-4">
-          <SubmitButton>שמירה</SubmitButton>
+          <SubmitButton pending={pending}>שמירה</SubmitButton>
           <Link href={cancelHref} className="btn btn-secondary">
             ביטול
           </Link>

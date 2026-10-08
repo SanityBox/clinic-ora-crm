@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useActionState, useState } from "react";
 import { saveTicket } from "./actions";
 import { Field, FormError } from "@/components/ui";
-import { SubmitButton } from "@/components/client";
+import { SubmitButton, submitKeepingFields } from "@/components/client";
 import { CustomerPicker } from "@/components/customer-picker";
 import type { CustomerOption } from "@/app/(app)/customers/actions";
 import { ticketPriority, ticketSource, ticketStatus } from "@/lib/labels";
@@ -31,12 +31,12 @@ export function TicketForm({
   cancelHref: string;
   readOnly?: boolean;
 }) {
-  const [state, action] = useActionState(saveTicket, null);
+  const [state, action, pending] = useActionState(saveTicket, null);
   const fe = state?.fieldErrors ?? {};
   const [status, setStatus] = useState(initial.status ?? "new");
 
   return (
-    <form action={action} className="card flex flex-col gap-4 p-4 sm:p-6" noValidate>
+    <form onSubmit={submitKeepingFields(action)} className="card flex flex-col gap-4 p-4 sm:p-6" noValidate>
       {initial.id && <input type="hidden" name="id" value={initial.id} />}
       <FormError message={state?.error} />
       <fieldset disabled={readOnly} className="flex flex-col gap-4">
@@ -84,7 +84,7 @@ export function TicketForm({
       </fieldset>
       {!readOnly && (
         <div className="flex flex-wrap gap-2 border-t border-line pt-4">
-          <SubmitButton>שמירה</SubmitButton>
+          <SubmitButton pending={pending}>שמירה</SubmitButton>
           <Link href={cancelHref} className="btn btn-secondary">ביטול</Link>
         </div>
       )}

@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useActionState } from "react";
 import { saveCustomer } from "./actions";
 import { Field, FormError } from "@/components/ui";
-import { SubmitButton } from "@/components/client";
+import { SubmitButton, submitKeepingFields } from "@/components/client";
 import { customerSource } from "@/lib/labels";
 
 export type CustomerFormValues = {
@@ -18,11 +18,11 @@ export type CustomerFormValues = {
 };
 
 export function CustomerForm({ initial, cancelHref }: { initial: CustomerFormValues; cancelHref: string }) {
-  const [state, action] = useActionState(saveCustomer, null);
+  const [state, action, pending] = useActionState(saveCustomer, null);
   const fe = state?.fieldErrors ?? {};
 
   return (
-    <form action={action} className="card flex flex-col gap-4 p-4 sm:p-6" noValidate>
+    <form onSubmit={submitKeepingFields(action)} className="card flex flex-col gap-4 p-4 sm:p-6" noValidate>
       {initial.id && <input type="hidden" name="id" value={initial.id} />}
       <FormError message={state?.error} />
 
@@ -78,7 +78,7 @@ export function CustomerForm({ initial, cancelHref }: { initial: CustomerFormVal
       </label>
 
       <div className="flex flex-wrap gap-2 border-t border-line pt-4">
-        <SubmitButton>שמירה</SubmitButton>
+        <SubmitButton pending={pending}>שמירה</SubmitButton>
         <Link href={cancelHref} className="btn btn-secondary">
           ביטול
         </Link>

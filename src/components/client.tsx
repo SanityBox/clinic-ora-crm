@@ -1,12 +1,24 @@
 "use client";
 
-import { useEffect, useState, type ReactNode } from "react";
+import { startTransition, useEffect, useState, type FormEvent, type ReactNode } from "react";
 import { useFormStatus } from "react-dom";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { CheckCircle2, AlertTriangle } from "lucide-react";
 
-export function SubmitButton({ children, className = "btn btn-primary", pendingText = "שומרת…" }: { children: ReactNode; className?: string; pendingText?: string }) {
-  const { pending } = useFormStatus();
+// <form action={fn}> makes React 19 reset the form after every submit, which wipes what the user typed
+// when validation fails and desyncs controlled selects. Submitting through onSubmit keeps the fields;
+// pass useActionState's isPending to SubmitButton, since useFormStatus doesn't see this path.
+export function submitKeepingFields(action: (fd: FormData) => void) {
+  return (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const fd = new FormData(e.currentTarget);
+    startTransition(() => action(fd));
+  };
+}
+
+export function SubmitButton({ children, className = "btn btn-primary", pendingText = "שומרת…", pending: pendingProp }: { children: ReactNode; className?: string; pendingText?: string; pending?: boolean }) {
+  const status = useFormStatus();
+  const pending = pendingProp ?? status.pending;
   return (
     <button type="submit" className={className} disabled={pending} aria-busy={pending}>
       {pending ? pendingText : children}
