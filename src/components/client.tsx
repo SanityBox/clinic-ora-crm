@@ -33,6 +33,8 @@ export function Toast() {
 
   useEffect(() => {
     if (!key) return;
+    // Syncing from the URL (an external system) is what this effect is for.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setShown(key);
     const rest = new URLSearchParams(params.toString());
     rest.delete("toast");

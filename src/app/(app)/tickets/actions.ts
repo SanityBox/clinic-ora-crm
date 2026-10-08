@@ -1,5 +1,6 @@
 "use server";
 
+import type { Enums } from "@/lib/database.types";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
@@ -33,10 +34,10 @@ export async function saveTicket(_prev: ActionState, formData: FormData): Promis
     customer_id: customerId,
     subject: optional(formData, "subject"),
     description,
-    status,
+    status: status as Enums<"ticket_status">,
     assignee_id: assigneeId,
-    priority,
-    source,
+    priority: priority as Enums<"ticket_priority">,
+    source: source as Enums<"ticket_source"> | null,
   };
 
   const supabase = await createClient();

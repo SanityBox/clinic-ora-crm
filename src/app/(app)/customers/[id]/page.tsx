@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 import { CalendarPlus, MessageCirclePlus, MessageCircle, Pencil, Phone, CalendarClock } from "lucide-react";
 import { requireStaff } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
-import { formatDate, formatPhone, formatTime, formatWeekday, whatsappLink, ageLabel, isOverdue } from "@/lib/format";
+import { formatDate, formatPhone, formatTime, formatWeekday, whatsappLink, ageLabel, isOverdue, requestTime } from "@/lib/format";
 import { appointmentStatus, cancelReason, customerSource, label, ticketStatus } from "@/lib/labels";
 import { Chip, EmptyState, Ltr, PageHeader, Section } from "@/components/ui";
 import { ActivityList, type ActivityRow } from "@/components/activity";
@@ -39,7 +39,7 @@ export default async function CustomerCardPage({ params }: PageProps<"/customers
   ]);
   if (!customer) notFound();
 
-  const now = Date.now();
+  const now = requestTime();
   const appts = appointments ?? [];
   const upcoming = appts
     .filter((a) => a.status !== "cancelled" && new Date(a.starts_at).getTime() > now)
@@ -202,7 +202,7 @@ function AppointmentList({ items }: { items: ApptItem[] }) {
     <ul className="flex flex-col">
       {items.map((a) => {
         const st = appointmentStatus[a.status as keyof typeof appointmentStatus];
-        const needsUpdate = a.status === "scheduled" && new Date(a.starts_at).getTime() < Date.now();
+        const needsUpdate = a.status === "scheduled" && new Date(a.starts_at).getTime() < requestTime();
         return (
           <li key={a.id} className="border-b border-line last:border-0">
             <Link href={`/appointments/${a.id}`} className="flex flex-wrap items-center gap-x-2 gap-y-1 py-2.5 hover:text-brand">

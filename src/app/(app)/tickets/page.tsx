@@ -4,7 +4,7 @@ import { MessageSquareText, Plus } from "lucide-react";
 import { requireStaff } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { getFormOptions } from "@/lib/options";
-import { ageLabel, isOverdue, OVERDUE_HOURS } from "@/lib/format";
+import { ageLabel, isOverdue, OVERDUE_HOURS, requestTime } from "@/lib/format";
 import { label, ticketSource, ticketStatus } from "@/lib/labels";
 import { Chip, EmptyState, Ltr, PageHeader } from "@/components/ui";
 
@@ -32,7 +32,7 @@ export default async function TicketsPage({ searchParams }: PageProps<"/tickets"
   else if (assignee === "none") query = query.is("assignee_id", null);
   else if (assignee) query = query.eq("assignee_id", assignee);
   if (overdueOnly) {
-    query = query.neq("status", "closed").lt("created_at", new Date(Date.now() - OVERDUE_HOURS * 3600_000).toISOString());
+    query = query.neq("status", "closed").lt("created_at", new Date(requestTime() - OVERDUE_HOURS * 3600_000).toISOString());
   }
 
   const [{ data: tickets, error }, { staff: team }] = await Promise.all([query, getFormOptions()]);

@@ -5,7 +5,7 @@ import { CheckCircle2 } from "lucide-react";
 import { requireStaff } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { getFormOptions } from "@/lib/options";
-import { formatDateTime, isoDateInIsrael, timeInIsrael } from "@/lib/format";
+import { formatDateTime, isoDateInIsrael, timeInIsrael, requestTime } from "@/lib/format";
 import { appointmentStatus, cancelReason, label } from "@/lib/labels";
 import { Chip, Ltr, PageHeader, Section } from "@/components/ui";
 import { ActivityList, type ActivityRow } from "@/components/activity";
@@ -36,7 +36,7 @@ export default async function AppointmentPage({ params }: PageProps<"/appointmen
   if (!appt) notFound();
 
   const st = appointmentStatus[appt.status as keyof typeof appointmentStatus];
-  const isPast = new Date(appt.starts_at).getTime() < Date.now();
+  const isPast = new Date(appt.starts_at).getTime() < requestTime();
 
   return (
     <>

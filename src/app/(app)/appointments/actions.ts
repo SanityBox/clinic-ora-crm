@@ -1,5 +1,6 @@
 "use server";
 
+import type { Enums } from "@/lib/database.types";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
@@ -37,8 +38,8 @@ export async function saveAppointment(_prev: ActionState, formData: FormData): P
     staff_id: optional(formData, "staff_id"),
     starts_at: israelLocalToTimestamptz(date, time),
     duration_minutes: duration,
-    status,
-    cancel_reason: status === "cancelled" ? cancelReason : null,
+    status: status as Enums<"appointment_status">,
+    cancel_reason: status === "cancelled" ? (cancelReason as Enums<"cancel_reason">) : null,
     notes: optional(formData, "notes"),
   };
 

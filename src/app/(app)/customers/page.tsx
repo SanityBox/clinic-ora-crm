@@ -141,7 +141,7 @@ export default async function CustomersPage({ searchParams }: PageProps<"/custom
                         תור: <Ltr>{formatDate(c.next_appointment_at)}</Ltr>
                       </span>
                     )}
-                    {c.open_tickets > 0 && <Chip tone="amber">{c.open_tickets} פתוחות</Chip>}
+                    {(c.open_tickets ?? 0) > 0 && <Chip tone="amber">{c.open_tickets} פתוחות</Chip>}
                   </div>
                 </Link>
                 <a href={`tel:${c.phone}`} className="btn btn-secondary size-11 shrink-0 px-0" aria-label={`חיוג ל${c.full_name}`}>

@@ -1,5 +1,6 @@
 "use server";
 
+import type { Enums } from "@/lib/database.types";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
@@ -44,7 +45,7 @@ export async function saveCustomer(_prev: ActionState, formData: FormData): Prom
     full_name: fullName,
     phone: phone!,
     email,
-    source,
+    source: source as Enums<"customer_source"> | null,
     marketing_consent: formData.get("marketing_consent") === "on",
     notes: optional(formData, "notes"),
   };

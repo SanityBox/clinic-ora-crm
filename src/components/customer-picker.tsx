@@ -17,6 +17,8 @@ export function CustomerPicker({ initial, error }: { initial: CustomerOption | n
   useEffect(() => {
     clearTimeout(timer.current);
     if (q.trim().length < 2) {
+      // Clearing stale results when the query gets too short; the alternative (deriving) would hide a pending search.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setResults([]);
       setSearched(false);
       return;

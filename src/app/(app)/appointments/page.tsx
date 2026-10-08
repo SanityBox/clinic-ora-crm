@@ -1,10 +1,11 @@
+import type { Enums } from "@/lib/database.types";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { CalendarDays, Plus } from "lucide-react";
 import { requireStaff } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { getFormOptions } from "@/lib/options";
-import { addDays, formatDate, formatPhone, formatTime, formatWeekday, isoDateInIsrael, TZ } from "@/lib/format";
+import { addDays, formatDate, formatPhone, formatTime, formatWeekday, isoDateInIsrael, TZ, requestTime } from "@/lib/format";
 import { appointmentStatus, cancelReason, label } from "@/lib/labels";
 import { Chip, EmptyState, Ltr, PageHeader } from "@/components/ui";
 
@@ -40,7 +41,7 @@ export default async function AppointmentsPage({ searchParams }: PageProps<"/app
   if (range === "week") query = query.gte("starts_at", dayStart(today)).lt("starts_at", dayStart(addDays(today, 7)));
   if (range === "upcoming") query = query.gte("starts_at", nowIso);
   if (range === "past") query = query.lt("starts_at", nowIso);
-  if (status) query = query.eq("status", status);
+  if (status) query = query.eq("status", status as Enums<"appointment_status">);
   if (therapist) query = query.eq("staff_id", therapist);
   query = query.order("starts_at", { ascending: range !== "past" && range !== "all" });
 
@@ -106,7 +107,7 @@ export default async function AppointmentsPage({ searchParams }: PageProps<"/app
         <ul className="card divide-y divide-line">
           {appts.map((a) => {
             const st = appointmentStatus[a.status as keyof typeof appointmentStatus];
-            const needsUpdate = a.status === "scheduled" && new Date(a.starts_at).getTime() < Date.now();
+            const needsUpdate = a.status === "scheduled" && new Date(a.starts_at).getTime() < requestTime();
             return (
               <li key={a.id}>
                 <Link href={`/appointments/${a.id}`} className="grid grid-cols-[4.5rem_1fr] gap-3 p-3 hover:bg-canvas sm:grid-cols-[7.5rem_1fr_auto] sm:items-center sm:px-4">

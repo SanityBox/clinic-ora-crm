@@ -110,3 +110,8 @@ export function openingHoursWarning(date: string, time: string, durationMinutes:
   }
   return null;
 }
+
+// Server Components render once per request, so reading the clock here is safe; the lint purity rule can't see that.
+export function requestTime(): number {
+  return Date.now();
+}

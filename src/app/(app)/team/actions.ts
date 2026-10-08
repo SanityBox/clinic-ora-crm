@@ -1,5 +1,6 @@
 "use server";
 
+import type { Enums } from "@/lib/database.types";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { requireAdmin } from "@/lib/auth";
@@ -20,7 +21,7 @@ export async function updateStaff(_prev: ActionState, formData: FormData): Promi
   const supabase = await createClient();
   const { error } = await supabase
     .from("staff")
-    .update({ role, is_active: isActive, specialty: str(formData, "specialty") || null })
+    .update({ role: role as Enums<"staff_role">, is_active: isActive, specialty: str(formData, "specialty") || null })
     .eq("id", id);
   if (error) return dbErrorMessage(error);
   revalidatePath("/", "layout");
