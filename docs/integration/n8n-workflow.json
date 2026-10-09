@@ -51,7 +51,7 @@
         0
       ],
       "parameters": {
-        "jsCode": "const toLocalPhone = (s) => {\n  let d = String(s ?? '').replace(/\\D/g, '');\n  if (d.startsWith('00972')) d = '0' + d.slice(5);\n  else if (d.startsWith('972')) d = '0' + d.slice(3);\n  return /^0(5|7)\\d{8}$/.test(d) || /^0[2-489]\\d{7}$/.test(d) ? d : null;\n};\nconst body = $input.first().json.body || {};\nconst name = String(body.name ?? '').trim();\nconst phone = toLocalPhone(body.phone);\nconst description = String(body.description ?? '').trim();\nconst missing = [];\nif (!name) missing.push('name');\nif (!phone) missing.push('phone');\nif (!description) missing.push('description');\nreturn [{ json: { valid: missing.length === 0, missing, name, phone, description, request_type: String(body.request_type ?? '').trim() } }];"
+        "jsCode": "const toLocalPhone = (s) => {\n  let d = String(s ?? '').replace(/\\D/g, '');\n  if (d.startsWith('00972')) d = '0' + d.slice(5);\n  else if (d.startsWith('972')) d = '0' + d.slice(3);\n  return /^0(5|7)\\d{8}$/.test(d) || /^0[2-489]\\d{7}$/.test(d) ? d : null;\n};\nconst body = $input.first().json.body || {};\nconst name = String(body.name ?? '').trim();\nconst phone = toLocalPhone(body.phone);\nconst description = String(body.description ?? '').trim();\nconst missing = [];\nif (!name) missing.push('name');\nif (!phone) missing.push('phone');\nif (!description) missing.push('description');\nreturn [{ json: { valid: missing.length === 0, missing, name, phone, description, request_type: String(body.request_type ?? '').trim(), raw_phone: String(body.phone ?? '').trim() } }];"
       }
     },
     {
@@ -174,8 +174,8 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
       "position": [
-        1120,
-        0
+        2660,
+        260
       ],
       "parameters": {
         "respondWith": "json",
@@ -364,6 +364,163 @@
         "responseBody": "={{ JSON.stringify($json.response) }}",
         "options": {}
       }
+    },
+    {
+      "id": "5e9e1022-599f-4dc6-b4f4-76042f9c95f6",
+      "name": "צריך נציגה? · פנייה",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1120,
+        260
+      ],
+      "parameters": {
+        "jsCode": "// Human handoff inside CloudChat (exam Q4-5, \"התראה לבן אדם\"): a saved human request, or a CRM failure that is not a input error\nconst r = $input.first().json.response || {};\nconst inp = $('בדיקת קלט · פנייה').first().json;\nconst inputErrors = ['invalid_phone', 'clinic_phone', 'missing_description', 'invalid_input'];\nlet tag = null;\nif (r.ok === true && inp.request_type === 'בקשת נציגה') tag = 'ביקשו נציגה';\nelse if (r.ok !== true && !inputErrors.includes(r.error)) tag = 'CRM נכשל - לטפל ידנית';\nreturn [{ json: { response: r, handoff: Boolean(tag && inp.raw_phone), tag, raw_phone: inp.raw_phone } }];"
+      }
+    },
+    {
+      "id": "ba204fa3-ac6c-432d-9a76-115af3209b5b",
+      "name": "להעביר לנציגה? · פנייה",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1340,
+        260
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "6c188148-7e12-4a0a-927d-482d52fea9ce",
+              "leftValue": "={{ $json.handoff }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "bb93a268-8965-4035-9cf8-aacd9b1393d0",
+      "name": "CloudChat · איתור השיחה",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1560,
+        160
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "=https://console.thecloud.chat/api/subscribers?user_field_ns=f263073v17864389&user_field_value={{ encodeURIComponent($json.raw_phone) }}&limit=10",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {
+          "timeout": 15000
+        }
+      },
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "COecLlGgnMP2e7DQ",
+          "name": "Roey - CloudChat API (אורה)"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "9affcb30-c83e-4767-b72a-11e51ffb28af",
+      "name": "בחירת השיחה האחרונה",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1780,
+        160
+      ],
+      "parameters": {
+        "jsCode": "// several test chats can share a phone: the conversation that is happening now has the latest interaction\nconst list = ($input.first().json.data || []).slice();\nlist.sort((a, b) => String(b.last_interaction || '').localeCompare(String(a.last_interaction || '')));\nreturn [{ json: { user_ns: list[0]?.user_ns || null } }];"
+      }
+    },
+    {
+      "id": "65defe84-67e9-4044-9172-576d6aea6bf2",
+      "name": "CloudChat · פתיחת השיחה לנציגה",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2000,
+        160
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "https://console.thecloud.chat/api/subscriber/move-chat-to",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {
+          "timeout": 15000
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ user_ns: $json.user_ns, status: 'open' }) }}"
+      },
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "COecLlGgnMP2e7DQ",
+          "name": "Roey - CloudChat API (אורה)"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "2e8c43bd-4637-418a-9c33-a476ed0dd9e4",
+      "name": "CloudChat · תגית סיבה",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2220,
+        160
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "https://console.thecloud.chat/api/subscriber/add-tag-by-name",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {
+          "timeout": 15000
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ user_ns: $('בחירת השיחה האחרונה').first().json.user_ns, tag_name: $('צריך נציגה? · פנייה').first().json.tag }) }}"
+      },
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "COecLlGgnMP2e7DQ",
+          "name": "Roey - CloudChat API (אורה)"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "ace92439-bb9e-41c9-9edf-d36374253c91",
+      "name": "תשובה סופית · פנייה",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2440,
+        260
+      ],
+      "parameters": {
+        "jsCode": "// the agent gets the CRM answer unchanged, whatever happened with the handoff\nreturn [{ json: { response: $('צריך נציגה? · פנייה').first().json.response } }];"
+      }
     }
   ],
   "connections": {
@@ -429,7 +586,7 @@
       "main": [
         [
           {
-            "node": "החזרה לסוכן · פנייה",
+            "node": "צריך נציגה? · פנייה",
             "type": "main",
             "index": 0
           }
@@ -440,7 +597,7 @@
       "main": [
         [
           {
-            "node": "החזרה לסוכן · פנייה",
+            "node": "צריך נציגה? · פנייה",
             "type": "main",
             "index": 0
           }
@@ -543,6 +700,90 @@
         [
           {
             "node": "החזרה לסוכן · תור",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "צריך נציגה? · פנייה": {
+      "main": [
+        [
+          {
+            "node": "להעביר לנציגה? · פנייה",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "להעביר לנציגה? · פנייה": {
+      "main": [
+        [
+          {
+            "node": "CloudChat · איתור השיחה",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "תשובה סופית · פנייה",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "CloudChat · איתור השיחה": {
+      "main": [
+        [
+          {
+            "node": "בחירת השיחה האחרונה",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "בחירת השיחה האחרונה": {
+      "main": [
+        [
+          {
+            "node": "CloudChat · פתיחת השיחה לנציגה",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "CloudChat · פתיחת השיחה לנציגה": {
+      "main": [
+        [
+          {
+            "node": "CloudChat · תגית סיבה",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "CloudChat · תגית סיבה": {
+      "main": [
+        [
+          {
+            "node": "תשובה סופית · פנייה",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "תשובה סופית · פנייה": {
+      "main": [
+        [
+          {
+            "node": "החזרה לסוכן · פנייה",
             "type": "main",
             "index": 0
           }
