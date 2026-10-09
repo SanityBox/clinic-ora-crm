@@ -48,3 +48,10 @@ CloudChat (AI Function) ──POST + x-roey-key──▶ n8n webhook ──▶ C
 | כשל מבוים: מפתח ה-CRM הושבת לכמה שניות | הסוכן קיבל `ok:false` ולא אישר פנייה. השיחה עברה ל-`open` עם התגית **"CRM נכשל - לטפל ידנית"** ✓ (n8n 792). המפתח הופעל מחדש. |
 | טלפון של הקליניקה (שגיאת קלט) | בלי העברה, הסוכן מבקש טלפון אחר ✓ (n8n 786) |
 
+### הגדרות הסוכן (עותק של מה שמוגדר ב-CloudChat)
+
+- [`agent-prompt.md`](agent-prompt.md): 4 חלקי הפרומפט (פרסונה, מיומנויות, מידע יציב, מגבלות).
+- [`functions-and-fields.md`](functions-and-fields.md): 3 הפונקציות, הפרמטרים ושדות המשתמש.
+- [`knowledge-base.md`](knowledge-base.md): מאגר הידע.
+- [`agent-tests.md`](agent-tests.md): 20 הודעות הבדיקה, ההיסטוריה מ-14/20 ועד 20/20, והתמלילים.
+

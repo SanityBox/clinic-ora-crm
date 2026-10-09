@@ -17,7 +17,9 @@ ONLY = {int(x) for x in sys.argv[2:]}
 CASES = [c for c in json.loads((HERE / "cases.json").read_text(encoding="utf-8")) if not ONLY or c["id"] in ONLY]
 
 # second person singular, masculine or feminine (the agent must address the user in neutral plural)
-GENDERED = re.compile(r"(?<![א-ת])(תרצה|תרצי|אליך|אלייך|אותך|עבורך|בשבילך|לך|תוכל|תוכלי|הגעת|כתבת|שלחת)(?![א-ת])")
+GENDERED = re.compile(r"(?<![א-ת])(תרצה|תרצי|אליך|אלייך|אותך|עבורך|בשבילך|לך|תוכל|תוכלי|הגעת|כתבת|שלחת|שיתפת|ששיתפת|היית|פנית|ביקשת|רצית|תצטרך|תצטרכי|מתאר|מתארת)(?![א-ת])")
+# grammar slip seen in run 2 ("תיצור אתכם קשר")
+GRAMMAR = re.compile(r"אתכם קשר")
 SLASH = re.compile(r"[א-ת]/[א-ת]")
 # a period or comma right after a number flips sides in RTL chat bubbles
 NUM_PUNCT = re.compile(r"\S\d[.,](?:\s|$)")
@@ -94,6 +96,9 @@ async def run_case(browser, case):
     m = GENDERED.search(agent_all)
     if m:
         problems.append(f"לשון לא ניטרלית: {m.group(0)}")
+    m = GRAMMAR.search(agent_all)
+    if m:
+        problems.append(f"דקדוק: {m.group(0)}")
     m = SLASH.search(agent_all)
     if m:
         problems.append(f"לוכסן: {m.group(0)}")
