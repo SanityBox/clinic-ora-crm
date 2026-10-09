@@ -16,7 +16,7 @@ export function dbErrorMessage(error: PgError): ActionState {
   if (code === "42501" || msg.includes("row-level security")) {
     if (msg.includes("last_admin")) return { error: "חייבת להישאר לפחות מנהלת פעילה אחת" };
     if (msg.includes("cannot_demote_self")) return { error: "אי אפשר להוריד את עצמך מתפקיד מנהלת או להשבית את עצמך" };
-    return { error: "אין לך הרשאה לפעולה הזו" };
+    return { error: "אין הרשאה לפעולה הזו" };
   }
   if (msg.includes("appointments_cancel_reason_matches")) {
     return { fieldErrors: { cancel_reason: "יש לבחור סיבת ביטול" } };

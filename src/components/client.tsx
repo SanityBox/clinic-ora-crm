@@ -32,7 +32,7 @@ const toastText: Record<string, { text: string; kind: "ok" | "warn" }> = {
   appointment_saved: { text: "התור נשמר", kind: "ok" },
   ticket_saved: { text: "הקריאה נשמרה", kind: "ok" },
   team_saved: { text: "השינוי נשמר", kind: "ok" },
-  no_permission: { text: "אין לך הרשאה לפעולה הזו", kind: "warn" },
+  no_permission: { text: "אין הרשאה לפעולה הזו", kind: "warn" },
 };
 
 /** Success messages after a redirect: actions append ?toast=<key>, this shows it for 3 seconds and cleans the URL. */
