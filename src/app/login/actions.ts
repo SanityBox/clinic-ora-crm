@@ -4,6 +4,9 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { str, type ActionState } from "@/lib/errors";
 
+// A path on this site: starts with one "/", no second "/" or "\" after it, no backslash or whitespace anywhere
+const SAFE_PATH = /^\/(?![/\\])[^\\\s]*$/;
+
 export async function signIn(_prev: ActionState, formData: FormData): Promise<ActionState> {
   const email = str(formData, "email").toLowerCase();
   const password = String(formData.get("password") ?? "");
@@ -25,6 +28,6 @@ export async function signIn(_prev: ActionState, formData: FormData): Promise<Ac
     return { error: "המשתמשת אינה פעילה, יש לפנות לרותם" };
   }
 
-  // Only same-site paths, never an absolute URL from the query string
-  redirect(next.startsWith("/") && !next.startsWith("//") ? next : "/");
+  // Only same-site paths. Browsers read "/\evil.com" as "//evil.com", so backslashes and control characters are refused too.
+  redirect(SAFE_PATH.test(next) ? next : "/");
 }
