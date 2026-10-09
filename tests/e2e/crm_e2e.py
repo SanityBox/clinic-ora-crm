@@ -21,7 +21,8 @@ CHECK_JS = """() => {
   const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
   while (walker.nextNode()) {
     const n = walker.currentNode;
-    if (!phone.test(n.textContent)) continue;
+    // structured phone fields only; a number inside a free-text sentence is the author's text
+    if (!/^\\s*0\\d{1,2}-?\\d{3}-?\\d{4}\\s*$/.test(n.textContent)) continue;
     const el = n.parentElement;
     if (!el || el.closest('script,style')) continue;
     if (getComputedStyle(el).direction !== 'ltr') unwrapped.push(n.textContent.trim().slice(0, 40));
@@ -63,7 +64,8 @@ async def happy_path(page):
     await page.goto(card + "/edit", wait_until="networkidle")
     await page.fill("#notes", "נבדק ב-E2E")
     await page.click("form:has(#full_name) button[type=submit]")
-    await page.wait_for_url(re.compile(r"/customers/[0-9a-f-]{36}"), timeout=20000)
+    # the edit page URL already matches /customers/<id>, so wait for the saved toast instead
+    await page.wait_for_url(re.compile(r"toast=customer_saved"), timeout=20000)
     await page.reload(wait_until="networkidle")
     steps.append(("עריכה נשמרת אחרי רענון", "נבדק ב-E2E" in await page.inner_text("body")))
     await page.goto(BASE + "/customers/new", wait_until="networkidle")
