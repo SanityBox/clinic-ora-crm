@@ -371,7 +371,12 @@ export type Database = {
         Returns: string
       }
       agent_create_ticket: {
-        Args: { p_description: string; p_name: string; p_phone: string }
+        Args: {
+          p_description: string
+          p_name: string
+          p_phone: string
+          p_request_type?: string
+        }
         Returns: Json
       }
       agent_next_appointment: { Args: { p_phone: string }; Returns: Json }

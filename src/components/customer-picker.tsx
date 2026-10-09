@@ -40,7 +40,7 @@ export function CustomerPicker({ initial, error }: { initial: CustomerOption | n
           <span className="font-medium">{selected.full_name}</span>{" "}
           <bdi className="ltr text-sm text-ink-soft">{formatPhone(selected.phone)}</bdi>
         </span>
-        <button type="button" className="btn btn-ghost min-h-9 text-sm" onClick={() => setSelected(null)}>
+        <button type="button" className="btn btn-ghost min-h-11 text-sm" onClick={() => setSelected(null)}>
           <X size={15} aria-hidden /> החלפה
         </button>
       </div>

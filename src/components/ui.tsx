@@ -33,7 +33,7 @@ export function PageHeader({
   return (
     <div className="mb-5">
       {back && (
-        <Link href={back.href} className="mb-2 inline-flex min-h-8 items-center text-sm text-ink-soft hover:text-brand">
+        <Link href={back.href} className="mb-2 inline-flex min-h-11 items-center text-sm text-ink-soft hover:text-brand">
           → {back.label}
         </Link>
       )}

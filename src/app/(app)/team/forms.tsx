@@ -47,7 +47,7 @@ export function StaffRowForm({ row, isMe }: { row: StaffRow; isMe: boolean }) {
         פעילה
       </label>
       <div className="flex flex-col items-start gap-1">
-        <SubmitButton className="btn btn-secondary min-h-10 text-sm">שמירה</SubmitButton>
+        <SubmitButton className="btn btn-secondary min-h-11 text-sm">שמירה</SubmitButton>
         <Saved state={state} />
       </div>
     </form>
@@ -76,7 +76,7 @@ export function TreatmentRowForm({ row }: { row?: TreatmentRow }) {
         פעיל
       </label>
       <div className="flex flex-col items-start gap-1">
-        <SubmitButton className="btn btn-secondary min-h-10 text-sm">{row ? "שמירה" : "הוספה"}</SubmitButton>
+        <SubmitButton className="btn btn-secondary min-h-11 text-sm">{row ? "שמירה" : "הוספה"}</SubmitButton>
         <Saved state={state} />
       </div>
     </form>

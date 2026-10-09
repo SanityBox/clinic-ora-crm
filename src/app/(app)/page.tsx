@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { CalendarPlus, MessageCirclePlus, UserPlus } from "lucide-react";
+import { CalendarPlus, Headset, MessageCirclePlus, UserPlus } from "lucide-react";
 import { requireStaff } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { addDays, ageLabel, formatTime, isoDateInIsrael, isOverdue, TZ } from "@/lib/format";
@@ -26,11 +26,11 @@ export default async function DashboardPage() {
   const supabase = await createClient();
   const today = isoDateInIsrael();
 
-  const [{ data: stats, error }, { data: latest }, { data: todayAppts }, { count: mine }] = await Promise.all([
+  const [{ data: stats, error }, { data: latest }, { data: todayAppts }, { count: mine }, { data: humanRequests }] = await Promise.all([
     supabase.rpc("dashboard_stats"),
     supabase
       .from("tickets")
-      .select("id, ticket_number, subject, status, created_at, customers(full_name), assignee:staff!tickets_assignee_id_fkey(full_name)")
+      .select("id, ticket_number, subject, status, priority, source, created_at, customers(full_name), assignee:staff!tickets_assignee_id_fkey(full_name)")
       .neq("status", "closed")
       .order("created_at", { ascending: false })
       .limit(8),
@@ -41,6 +41,14 @@ export default async function DashboardPage() {
       .lt("starts_at", `${addDays(today, 1)} 00:00:00 ${TZ}`)
       .order("starts_at"),
     supabase.from("tickets").select("id", { count: "exact", head: true }).neq("status", "closed").eq("assignee_id", staff.id),
+    // PRD 11.1: someone asked the agent for a person. Shown until a staff member starts handling it.
+    supabase
+      .from("tickets")
+      .select("id, ticket_number, subject, created_at, customers(full_name)")
+      .eq("source", "ai_agent")
+      .eq("priority", "urgent")
+      .eq("status", "new")
+      .order("created_at"),
   ]);
   if (error) throw new Error(error.message);
   const s = stats as Stats;
@@ -66,6 +74,26 @@ export default async function DashboardPage() {
           )
         }
       />
+
+      {!!humanRequests?.length && (
+        <section className="card mb-5 border-tone-red p-4" aria-labelledby="human-requests">
+          <h2 id="human-requests" className="mb-2 flex items-center gap-2 font-semibold text-tone-red">
+            <Headset size={20} aria-hidden /> ביקשו נציגה · {humanRequests.length}
+          </h2>
+          <ul className="flex flex-col">
+            {humanRequests.map((t) => (
+              <li key={t.id} className="border-b border-line last:border-0">
+                <Link href={`/tickets/${t.id}`} className="flex min-h-11 flex-wrap items-center gap-x-2 gap-y-1 py-2 hover:text-brand">
+                  <Ltr className="text-sm text-ink-soft">#{t.ticket_number}</Ltr>
+                  <span className="font-medium">{t.customers?.full_name}</span>
+                  <span className="min-w-0 flex-1 truncate text-sm text-ink-soft">{t.subject}</span>
+                  <span className="text-[13px] text-ink-soft">{ageLabel(t.created_at)}</span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
 
       <div className="mb-5 grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6">
         <Stat label="קריאות חדשות" value={s.new_count} href="/tickets?status=new" />
@@ -118,7 +146,7 @@ export default async function DashboardPage() {
           </table>
         </Section>
 
-        <Section title="התורים של היום" actions={<Link href="/appointments?range=today" className="btn btn-ghost min-h-9 text-sm">לכל התורים</Link>}>
+        <Section title="התורים של היום" actions={<Link href="/appointments?range=today" className="btn btn-ghost min-h-11 text-sm">לכל התורים</Link>}>
           {!todayAppts?.length ? (
             <EmptyState title="אין תורים היום" />
           ) : (
@@ -146,7 +174,7 @@ export default async function DashboardPage() {
         </Section>
       </div>
 
-      <Section title="קריאות פתוחות אחרונות" className="mt-4" actions={<Link href="/tickets" className="btn btn-ghost min-h-9 text-sm">לכל הקריאות</Link>}>
+      <Section title="קריאות פתוחות אחרונות" className="mt-4" actions={<Link href="/tickets" className="btn btn-ghost min-h-11 text-sm">לכל הקריאות</Link>}>
         {!latest?.length ? (
           <EmptyState title="אין קריאות פתוחות" text="כל הפניות טופלו." />
         ) : (
@@ -161,6 +189,8 @@ export default async function DashboardPage() {
                     <span className="font-medium">{t.customers?.full_name}</span>
                     <span className="min-w-0 flex-1 truncate text-sm text-ink-soft">{t.subject}</span>
                     <Chip tone={st.tone}>{st.label}</Chip>
+                    {t.priority === "urgent" && <Chip tone="red">דחופה</Chip>}
+                    {t.source === "ai_agent" && <Chip tone="brand">סוכן AI</Chip>}
                     {overdue && <Chip tone="red">חורגת</Chip>}
                     <span className="w-full text-[13px] text-ink-soft sm:w-auto">
                       {t.assignee?.full_name ?? "לא שויכה"} · {ageLabel(t.created_at)}
