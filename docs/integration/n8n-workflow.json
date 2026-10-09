@@ -113,7 +113,7 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ p_name: $json.name, p_phone: $json.phone, p_description: ($json.request_type ? '[' + $json.request_type + '] ' : '') + $json.description }) }}",
+        "jsonBody": "={{ JSON.stringify({ p_name: $json.name, p_phone: $json.phone, p_description: ($json.request_type ? '[' + $json.request_type + '] ' : '') + $json.description, p_request_type: $json.request_type || null }) }}",
         "options": {
           "timeout": 15000
         }
@@ -139,7 +139,7 @@
         -140
       ],
       "parameters": {
-        "jsCode": "const r = $input.first().json;\n// Confirm only when the database returned a real ticket number (exam 5a: never report a ticket that was not created)\nif (r && r.ok === true && Number.isInteger(r.ticket_number)) {\n  return [{ json: { response: {\n    ok: true,\n    ticket_number: r.ticket_number,\n    ticket_id: r.ticket_id,\n    status: 'חדשה',\n    customer_created: r.customer_created === true,\n    message: 'הפנייה נשמרה ב-CRM. מספר פנייה ' + r.ticket_number + '.'\n  } } }];\n}\nreturn [{ json: { response: {\n  ok: false,\n  error: r?.error || 'crm_rejected',\n  message: 'הפנייה לא נשמרה. אסור לומר ללקוחה שנפתחה פנייה.'\n} } }];"
+        "jsCode": "const r = $input.first().json;\n// Confirm only when the database returned a real ticket number (exam 5a: never report a ticket that was not created)\nif (r && r.ok === true && Number.isInteger(r.ticket_number)) {\n  return [{ json: { response: {\n    ok: true,\n    ticket_number: r.ticket_number,\n    ticket_id: r.ticket_id,\n    status: 'חדשה',\n    priority: r.priority === 'urgent' ? 'דחופה' : 'רגילה',\n    duplicate: r.duplicate === true,\n    customer_created: r.customer_created === true,\n    message: r.duplicate === true\n      ? 'הפנייה הזו כבר נשמרה קודם, מספר פנייה ' + r.ticket_number + '. אין לפתוח שוב.'\n      : 'הפנייה נשמרה ב-CRM. מספר פנייה ' + r.ticket_number + '.'\n  } } }];\n}\nconst messages = {\n  clinic_phone: 'זה מספר הטלפון של הקליניקה, לא של הלקוחה. יש לבקש מהלקוחה את מספר הטלפון שלה. הפנייה לא נשמרה.',\n  invalid_phone: 'מספר הטלפון לא תקין. יש לבקש מהלקוחה מספר ישראלי תקין. הפנייה לא נשמרה.',\n};\nreturn [{ json: { response: {\n  ok: false,\n  error: r?.error || 'crm_rejected',\n  message: messages[r?.error] || 'הפנייה לא נשמרה. אסור לומר ללקוחה שנפתחה פנייה.'\n} } }];"
       }
     },
     {
@@ -321,7 +321,7 @@
         420
       ],
       "parameters": {
-        "jsCode": "const r = $input.first().json;\nlet response;\nif (!r || r.ok !== true) {\n  response = { ok: false, error: r?.error || 'crm_error', message: 'לא ניתן לבדוק כרגע. אין לנחש תור.' };\n} else if (!r.customer_found) {\n  response = { ok: true, customer_found: false, has_appointment: false, message: 'לא נמצאה לקוחה עם מספר הטלפון הזה ברשומות.' };\n} else if (!r.has_appointment) {\n  response = { ok: true, customer_found: true, has_appointment: false, first_name: r.first_name, message: 'אין תור עתידי ברשומות שנבדקו.' };\n} else {\n  response = {\n    ok: true, customer_found: true, has_appointment: true,\n    first_name: r.first_name, weekday: r.weekday, date: r.date, time: r.time,\n    treatment: r.treatment, therapist: r.therapist || null,\n    message: 'התור הבא: יום ' + r.weekday + ', ' + r.date + ' בשעה ' + r.time + ', ' + r.treatment + '.'\n  };\n}\nreturn [{ json: { response } }];"
+        "jsCode": "const r = $input.first().json;\n// PRD 10.2: only what is needed to answer, no name or therapist (the chat has no proof of identity)\nlet response;\nif (!r || r.ok !== true) {\n  response = { ok: false, error: r?.error || 'crm_error', message: 'לא ניתן לבדוק כרגע. אין לנחש תור.' };\n} else if (!r.customer_found) {\n  response = { ok: true, customer_found: false, has_appointment: false, message: 'לא נמצאה לקוחה עם מספר הטלפון הזה ברשומות.' };\n} else if (!r.has_appointment) {\n  response = { ok: true, customer_found: true, has_appointment: false, message: 'אין תור עתידי ברשומות שנבדקו.' };\n} else {\n  response = {\n    ok: true, customer_found: true, has_appointment: true,\n    weekday: r.weekday, date: r.date, time: r.time, treatment: r.treatment,\n    message: 'התור הבא: יום ' + r.weekday + ' ' + r.date + ' בשעה ' + r.time + ', ' + r.treatment\n  };\n}\nreturn [{ json: { response } }];"
       }
     },
     {
