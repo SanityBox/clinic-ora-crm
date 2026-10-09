@@ -107,7 +107,7 @@
           "parameters": [
             {
               "name": "apikey",
-              "value": "sb_publishable_-LWWlSYJW0-bftUJ8YcEzA_GkJmtjr-"
+              "value": "<SUPABASE_PUBLISHABLE_KEY>"
             }
           ]
         },
@@ -289,7 +289,7 @@
           "parameters": [
             {
               "name": "apikey",
-              "value": "sb_publishable_-LWWlSYJW0-bftUJ8YcEzA_GkJmtjr-"
+              "value": "<SUPABASE_PUBLISHABLE_KEY>"
             }
           ]
         },
