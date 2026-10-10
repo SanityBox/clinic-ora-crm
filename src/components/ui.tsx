@@ -114,6 +114,33 @@ export function FormError({ message }: { message?: string }) {
   );
 }
 
+export function Pager({ page, pages, href }: { page: number; pages: number; href: (page: number) => string }) {
+  if (pages <= 1) return null;
+  return (
+    <nav className="mt-4 flex items-center justify-center gap-2" aria-label="עמודים">
+      {page > 1 && (
+        <Link className="btn btn-secondary" href={href(page - 1)}>
+          הקודם
+        </Link>
+      )}
+      <span className="text-sm text-ink-soft">
+        עמוד {page} מתוך {pages}
+      </span>
+      {page < pages && (
+        <Link className="btn btn-secondary" href={href(page + 1)}>
+          הבא
+        </Link>
+      )}
+    </nav>
+  );
+}
+
+/** "225 תורים · מוצגים 51–100" when the list spans more than one page. */
+export function countLabel(total: number, noun: string, page: number, pageSize: number): string {
+  if (total <= pageSize) return `${total} ${noun}`;
+  return `${total} ${noun} · מוצגים ${(page - 1) * pageSize + 1}–${Math.min(page * pageSize, total)}`;
+}
+
 export function Ltr({ children, className = "" }: { children: ReactNode; className?: string }) {
   return <bdi className={`ltr ${className}`}>{children}</bdi>;
 }

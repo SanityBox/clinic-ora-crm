@@ -10,6 +10,7 @@ export function CustomerPicker({ initial, error }: { initial: CustomerOption | n
   const [selected, setSelected] = useState<CustomerOption | null>(initial);
   const [q, setQ] = useState("");
   const [results, setResults] = useState<CustomerOption[]>([]);
+  const [more, setMore] = useState(false);
   const [searched, setSearched] = useState(false);
   const [pending, startTransition] = useTransition();
   const timer = useRef<ReturnType<typeof setTimeout>>(undefined);
@@ -25,7 +26,9 @@ export function CustomerPicker({ initial, error }: { initial: CustomerOption | n
     }
     timer.current = setTimeout(() => {
       startTransition(async () => {
-        setResults(await searchCustomers(q));
+        const r = await searchCustomers(q);
+        setResults(r.customers);
+        setMore(r.more);
         setSearched(true);
       });
     }, 250);
@@ -81,6 +84,9 @@ export function CustomerPicker({ initial, error }: { initial: CustomerOption | n
               </button>
             </li>
           ))}
+          {more && (
+            <li className="px-3 py-2 text-sm text-ink-soft">יש עוד תוצאות. כדאי להקליד עוד מהשם או מהטלפון.</li>
+          )}
           {searched && !pending && results.length === 0 && (
             <li className="px-3 py-2 text-sm text-ink-soft">
               לא נמצאה לקוחה.{" "}

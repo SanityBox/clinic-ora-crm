@@ -27,7 +27,7 @@ export default async function DashboardPage() {
   const supabase = await createClient();
   const today = isoDateInIsrael();
 
-  const [{ data: stats, error }, { data: latest }, { data: todayAppts }, { count: mine }, { data: humanRequests }, { data: incidents }] = await Promise.all([
+  const [{ data: stats, error }, { data: latest }, { data: todayAppts }, { count: mine }, { data: humanRequests }, { data: incidents, count: incidentCount }] = await Promise.all([
     supabase.rpc("dashboard_stats"),
     supabase
       .from("tickets")
@@ -53,7 +53,7 @@ export default async function DashboardPage() {
     // n8n reports integration failures here (error workflow, failed CloudChat handoff); shown until someone marks it handled
     supabase
       .from("integration_incidents")
-      .select("id, source, node, message, created_at")
+      .select("id, source, node, message, created_at", { count: "exact" })
       .is("resolved_at", null)
       .order("created_at", { ascending: false })
       .limit(5),
@@ -106,7 +106,8 @@ export default async function DashboardPage() {
       {!!incidents?.length && (
         <section className="card mb-5 border-tone-red p-4" aria-labelledby="incidents">
           <h2 id="incidents" className="mb-1 flex items-center gap-2 font-semibold text-tone-red">
-            <TriangleAlert size={20} aria-hidden /> תקלה בחיבור לסוכן · {incidents.length}
+            <TriangleAlert size={20} aria-hidden /> תקלה בחיבור לסוכן · {incidentCount ?? incidents.length}
+            {(incidentCount ?? 0) > incidents.length && <span className="text-sm font-normal"> (מוצגות {incidents.length} האחרונות)</span>}
           </h2>
           <p className="mb-2 text-sm text-ink-soft">מוצגות עד שמסמנים &quot;טופל&quot;. פניות מהזמן הזה כדאי לבדוק גם ב-CloudChat.</p>
           <ul className="flex flex-col">

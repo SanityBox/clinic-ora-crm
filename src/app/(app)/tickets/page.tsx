@@ -1,17 +1,19 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { MessageSquareText, Plus } from "lucide-react";
 import { requireStaff } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { getFormOptions } from "@/lib/options";
 import { ageLabel, isOverdue, OVERDUE_BUSINESS_DAYS, requestTime } from "@/lib/format";
 import { label, ticketSource, ticketStatus } from "@/lib/labels";
-import { Chip, EmptyState, Ltr, PageHeader } from "@/components/ui";
+import { Chip, countLabel, EmptyState, Ltr, PageHeader, Pager } from "@/components/ui";
 
 export const metadata: Metadata = { title: "קריאות שירות" };
 
 const statusFilters = { open: "פתוחות", new: "חדשה", in_progress: "בטיפול", closed: "נסגרה", all: "הכל" } as const;
 type StatusFilter = keyof typeof statusFilters;
+const PAGE_SIZE = 50;
 
 export default async function TicketsPage({ searchParams }: PageProps<"/tickets">) {
   const staff = await requireStaff();
@@ -19,13 +21,15 @@ export default async function TicketsPage({ searchParams }: PageProps<"/tickets"
   const status: StatusFilter = typeof sp.status === "string" && sp.status in statusFilters ? (sp.status as StatusFilter) : "open";
   const assignee = typeof sp.assignee === "string" ? sp.assignee : "";
   const overdueOnly = sp.overdue === "1";
+  const page = Math.max(1, Number(sp.page) || 1);
 
   const supabase = await createClient();
   let query = supabase
     .from("tickets")
-    .select("id, ticket_number, subject, status, priority, source, created_at, due_at, customer_id, customers(full_name), assignee:staff!tickets_assignee_id_fkey(full_name)")
+    .select("id, ticket_number, subject, status, priority, source, created_at, due_at, customer_id, customers(full_name), assignee:staff!tickets_assignee_id_fkey(full_name)", { count: "exact" })
     .order("created_at", { ascending: false })
-    .limit(200);
+    .order("id")
+    .range((page - 1) * PAGE_SIZE, page * PAGE_SIZE - 1);
   if (status === "open") query = query.neq("status", "closed");
   else if (status !== "all") query = query.eq("status", status);
   if (assignee === "me") query = query.eq("assignee_id", staff.id);
@@ -35,20 +39,23 @@ export default async function TicketsPage({ searchParams }: PageProps<"/tickets"
     query = query.neq("status", "closed").lt("due_at", new Date(requestTime()).toISOString());
   }
 
-  const [{ data: tickets, error }, { staff: team }] = await Promise.all([query, getFormOptions()]);
-  if (error) throw new Error(error.message);
-
   const qs = (patch: Record<string, string>) => {
     const p = new URLSearchParams({ status, assignee, overdue: overdueOnly ? "1" : "", ...patch });
     for (const [k, v] of [...p.entries()]) if (!v) p.delete(k);
     return `/tickets?${p}`;
   };
 
+  const [{ data: tickets, count, error }, { staff: team }] = await Promise.all([query, getFormOptions()]);
+  if (error?.code === "PGRST103") redirect(qs({ page: "" }));
+  if (error) throw new Error(error.message);
+  const total = count ?? 0;
+
+
   return (
     <>
       <PageHeader
         title="קריאות שירות"
-        subtitle={`${statusFilters[status]}${overdueOnly ? " · חורגות בלבד" : ""} · ${tickets?.length ?? 0} קריאות`}
+        subtitle={`${statusFilters[status]}${overdueOnly ? " · חורגות בלבד" : ""} · ${countLabel(total, "קריאות", page, PAGE_SIZE)}`}
         actions={
           staff.canWrite && (
             <Link href="/tickets/new" className="btn btn-primary">
@@ -121,6 +128,7 @@ export default async function TicketsPage({ searchParams }: PageProps<"/tickets"
           })}
         </ul>
       )}
+      <Pager page={page} pages={Math.ceil(total / PAGE_SIZE)} href={(p) => qs({ page: String(p) })} />
     </>
   );
 }

@@ -1,13 +1,14 @@
 import type { Enums } from "@/lib/database.types";
 import type { Metadata } from "next";
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { CalendarDays, Plus } from "lucide-react";
 import { requireStaff } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { getFormOptions } from "@/lib/options";
 import { addDays, formatDate, formatPhone, formatTime, formatWeekday, isoDateInIsrael, TZ, requestTime } from "@/lib/format";
 import { appointmentStatus, cancelReason, label } from "@/lib/labels";
-import { Chip, EmptyState, Ltr, PageHeader } from "@/components/ui";
+import { Chip, countLabel, EmptyState, Ltr, PageHeader, Pager } from "@/components/ui";
 
 export const metadata: Metadata = { title: "תורים" };
 
@@ -19,6 +20,7 @@ const ranges = {
   all: "הכל",
 } as const;
 type Range = keyof typeof ranges;
+const PAGE_SIZE = 50;
 
 export default async function AppointmentsPage({ searchParams }: PageProps<"/appointments">) {
   const staff = await requireStaff();
@@ -26,6 +28,7 @@ export default async function AppointmentsPage({ searchParams }: PageProps<"/app
   const range: Range = typeof sp.range === "string" && sp.range in ranges ? (sp.range as Range) : "today";
   const status = typeof sp.status === "string" && sp.status in appointmentStatus ? sp.status : "";
   const therapist = typeof sp.staff === "string" ? sp.staff : "";
+  const page = Math.max(1, Number(sp.page) || 1);
 
   const today = isoDateInIsrael();
   const dayStart = (d: string) => `${d} 00:00:00 ${TZ}`;
@@ -34,8 +37,7 @@ export default async function AppointmentsPage({ searchParams }: PageProps<"/app
   const supabase = await createClient();
   let query = supabase
     .from("appointments")
-    .select("id, starts_at, duration_minutes, status, cancel_reason, customer_id, staff_id, customers(full_name, phone), treatments(name), staff:staff!appointments_staff_id_fkey(full_name)")
-    .limit(200);
+    .select("id, starts_at, duration_minutes, status, cancel_reason, customer_id, staff_id, customers(full_name, phone), treatments(name), staff:staff!appointments_staff_id_fkey(full_name)", { count: "exact" });
 
   if (range === "today") query = query.gte("starts_at", dayStart(today)).lt("starts_at", dayStart(addDays(today, 1)));
   if (range === "week") query = query.gte("starts_at", dayStart(today)).lt("starts_at", dayStart(addDays(today, 7)));
@@ -43,10 +45,21 @@ export default async function AppointmentsPage({ searchParams }: PageProps<"/app
   if (range === "past") query = query.lt("starts_at", nowIso);
   if (status) query = query.eq("status", status as Enums<"appointment_status">);
   if (therapist) query = query.eq("staff_id", therapist);
-  query = query.order("starts_at", { ascending: range !== "past" && range !== "all" });
+  query = query
+    .order("starts_at", { ascending: range !== "past" && range !== "all" })
+    .order("id")
+    .range((page - 1) * PAGE_SIZE, page * PAGE_SIZE - 1);
 
-  const [{ data: appts, error }, { staff: team }] = await Promise.all([query, getFormOptions()]);
+  const qs = (patch: Record<string, string>) => {
+    const p = new URLSearchParams({ range, status, staff: therapist, ...patch });
+    for (const [k, v] of [...p.entries()]) if (!v) p.delete(k);
+    return `/appointments?${p}`;
+  };
+
+  const [{ data: appts, count, error }, { staff: team }] = await Promise.all([query, getFormOptions()]);
+  if (error?.code === "PGRST103") redirect(qs({ page: "" }));
   if (error) throw new Error(error.message);
+  const total = count ?? 0;
 
   // BR-08ג: scheduled appointments that share a time window with another scheduled one of the same therapist or client.
   const overlapping = new Set<string>();
@@ -63,17 +76,12 @@ export default async function AppointmentsPage({ searchParams }: PageProps<"/app
     }
   }
 
-  const qs = (patch: Record<string, string>) => {
-    const p = new URLSearchParams({ range, status, staff: therapist, ...patch });
-    for (const [k, v] of [...p.entries()]) if (!v) p.delete(k);
-    return `/appointments?${p}`;
-  };
 
   return (
     <>
       <PageHeader
         title="תורים"
-        subtitle={`${ranges[range]} · ${appts?.length ?? 0} תורים`}
+        subtitle={`${ranges[range]} · ${countLabel(total, "תורים", page, PAGE_SIZE)}`}
         actions={
           staff.canWrite && (
             <Link href="/appointments/new" className="btn btn-primary">
@@ -151,6 +159,7 @@ export default async function AppointmentsPage({ searchParams }: PageProps<"/app
           })}
         </ul>
       )}
+      <Pager page={page} pages={Math.ceil(total / PAGE_SIZE)} href={(p) => qs({ page: String(p) })} />
     </>
   );
 }

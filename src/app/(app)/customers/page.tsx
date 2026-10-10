@@ -7,7 +7,7 @@ import { createClient } from "@/lib/supabase/server";
 import { customerSearchFilter } from "@/lib/search";
 import { formatDate, formatPhone, normalizePhone } from "@/lib/format";
 import { customerSource, label } from "@/lib/labels";
-import { Chip, EmptyState, Ltr, PageHeader } from "@/components/ui";
+import { Chip, EmptyState, Ltr, PageHeader, Pager } from "@/components/ui";
 
 export const metadata: Metadata = { title: "לקוחות" };
 
@@ -25,10 +25,13 @@ export default async function CustomersPage({ searchParams }: PageProps<"/custom
     .from("customer_overview")
     .select("id, full_name, phone, source, next_appointment_at, next_treatment, open_tickets, updated_at", { count: "exact" })
     .order("updated_at", { ascending: false })
+    .order("id")
     .range((page - 1) * PAGE_SIZE, page * PAGE_SIZE - 1);
   const filter = customerSearchFilter(q);
   if (filter) query = query.or(filter);
   const { data: customers, count, error } = await query;
+  // PGRST103: the page is past the end (e.g. after deletions), so go back to the first page
+  if (error?.code === "PGRST103") redirect(q ? `/customers?${new URLSearchParams({ q })}` : "/customers");
   if (error) throw new Error(error.message);
 
   // Header search with a full phone number that matches exactly one card goes straight to it (PRD 4.2)
@@ -151,23 +154,7 @@ export default async function CustomersPage({ searchParams }: PageProps<"/custom
             ))}
           </ul>
 
-          {pages > 1 && (
-            <nav className="mt-4 flex items-center justify-center gap-2" aria-label="עמודים">
-              {page > 1 && (
-                <Link className="btn btn-secondary" href={`/customers?${new URLSearchParams({ q, page: String(page - 1) })}`}>
-                  הקודם
-                </Link>
-              )}
-              <span className="text-sm text-ink-soft">
-                עמוד {page} מתוך {pages}
-              </span>
-              {page < pages && (
-                <Link className="btn btn-secondary" href={`/customers?${new URLSearchParams({ q, page: String(page + 1) })}`}>
-                  הבא
-                </Link>
-              )}
-            </nav>
-          )}
+          <Pager page={page} pages={pages} href={(p) => `/customers?${new URLSearchParams({ q, page: String(p) })}`} />
         </>
       )}
     </>

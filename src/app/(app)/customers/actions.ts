@@ -77,11 +77,14 @@ export async function deleteCustomer(formData: FormData) {
 
 export type CustomerOption = { id: string; full_name: string; phone: string };
 
-export async function searchCustomers(q: string): Promise<CustomerOption[]> {
+const PICKER_LIMIT = 8;
+
+export async function searchCustomers(q: string): Promise<{ customers: CustomerOption[]; more: boolean }> {
   await requireStaff();
   const filter = customerSearchFilter(q);
-  if (!filter) return [];
+  if (!filter) return { customers: [], more: false };
   const supabase = await createClient();
-  const { data } = await supabase.from("customers").select("id, full_name, phone").or(filter).order("full_name").limit(8);
-  return data ?? [];
+  // one extra row tells the picker there are more matches than it shows
+  const { data } = await supabase.from("customers").select("id, full_name, phone").or(filter).order("full_name").limit(PICKER_LIMIT + 1);
+  return { customers: (data ?? []).slice(0, PICKER_LIMIT), more: (data?.length ?? 0) > PICKER_LIMIT };
 }
