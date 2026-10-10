@@ -61,10 +61,7 @@
           "name": "Roey - קליניקת אורה · מפתח CRM"
         }
       },
-      "onError": "continueRegularOutput",
-      "retryOnFail": true,
-      "maxTries": 2,
-      "waitBetweenTries": 2000
+      "onError": "continueRegularOutput"
     }
   ],
   "connections": {

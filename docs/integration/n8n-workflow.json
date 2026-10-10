@@ -124,10 +124,7 @@
           "name": "Roey - קליניקת אורה · מפתח CRM"
         }
       },
-      "onError": "continueErrorOutput",
-      "retryOnFail": true,
-      "maxTries": 2,
-      "waitBetweenTries": 1000
+      "onError": "continueErrorOutput"
     },
     {
       "id": "900-140",
@@ -306,10 +303,7 @@
           "name": "Roey - קליניקת אורה · מפתח CRM"
         }
       },
-      "onError": "continueErrorOutput",
-      "retryOnFail": true,
-      "maxTries": 2,
-      "waitBetweenTries": 1000
+      "onError": "continueErrorOutput"
     },
     {
       "id": "900420",
@@ -510,6 +504,206 @@
       "parameters": {
         "jsCode": "return [{ json: { response: $('כשל · תור').first().json.response } }];"
       }
+    },
+    {
+      "id": "890762ae-171f-438a-a1c5-fc7cdb553b74",
+      "name": "שגיאה זמנית? · פנייה",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        660,
+        140
+      ],
+      "parameters": {
+        "jsCode": "// course table: 401/403 = no retry, alert; 5xx, 429 or no response = one retry\nconst e = $input.first().json.error || {};\nconst code = Number(e.httpCode || e.status || (String(e.message || '').match(/\\b(\\d{3})\\b/) || [])[1] || 0);\nreturn [{ json: { transient: !code || code >= 500 || code === 429, code } }];"
+      }
+    },
+    {
+      "id": "54667b30-5b66-4975-a305-00b2fb6a8093",
+      "name": "לנסות שוב? · פנייה",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        880,
+        140
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "63a86244-407c-4466-8611-d938b0492590",
+              "leftValue": "={{ $json.transient }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "8d3c5352-9023-4ef4-a7df-54fe2345438e",
+      "name": "המתנה · פנייה",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        1100,
+        140
+      ],
+      "parameters": {
+        "amount": 1,
+        "unit": "seconds"
+      },
+      "webhookId": "6fc00d22-91bb-4a19-b70e-79422e71d687"
+    },
+    {
+      "id": "d9f77955-363d-4236-9ab5-ed1f8fb7c579",
+      "name": "Supabase · פתיחת קריאה · ניסיון שני",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1320,
+        140
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "https://sepxjnntftgzgjfadbgn.supabase.co/rest/v1/rpc/agent_create_ticket",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "<SUPABASE_PUBLISHABLE_KEY>"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ p_name: $('בדיקת קלט · פנייה').first().json.name, p_phone: $('בדיקת קלט · פנייה').first().json.phone, p_description: ($('בדיקת קלט · פנייה').first().json.request_type ? '[' + $('בדיקת קלט · פנייה').first().json.request_type + '] ' : '') + $('בדיקת קלט · פנייה').first().json.description, p_request_type: $('בדיקת קלט · פנייה').first().json.request_type || null }) }}",
+        "options": {
+          "timeout": 15000
+        }
+      },
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "Cc2m5CGFkJs0bCvH",
+          "name": "Roey - קליניקת אורה · מפתח CRM"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "id": "5d9d0a20-e734-40d3-85c2-35c25fc1a61d",
+      "name": "שגיאה זמנית? · תור",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        660,
+        700
+      ],
+      "parameters": {
+        "jsCode": "// course table: 401/403 = no retry, alert; 5xx, 429 or no response = one retry\nconst e = $input.first().json.error || {};\nconst code = Number(e.httpCode || e.status || (String(e.message || '').match(/\\b(\\d{3})\\b/) || [])[1] || 0);\nreturn [{ json: { transient: !code || code >= 500 || code === 429, code } }];"
+      }
+    },
+    {
+      "id": "6d6c88fa-4b65-41a9-92a6-29e898616865",
+      "name": "לנסות שוב? · תור",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        880,
+        700
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "114ffffe-5fb7-4e40-897e-34aa446eb75c",
+              "leftValue": "={{ $json.transient }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "b9cb1e3f-60f4-4b1d-80cc-cecf7d9778eb",
+      "name": "המתנה · תור",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        1100,
+        700
+      ],
+      "parameters": {
+        "amount": 1,
+        "unit": "seconds"
+      },
+      "webhookId": "ed9ce76a-725c-4885-a694-98a637a2a9b5"
+    },
+    {
+      "id": "5041eb91-bb97-4ba2-a9e5-8bdc9cf2ce7c",
+      "name": "Supabase · התור הבא · ניסיון שני",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1320,
+        700
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "https://sepxjnntftgzgjfadbgn.supabase.co/rest/v1/rpc/agent_next_appointment",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "<SUPABASE_PUBLISHABLE_KEY>"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ p_phone: $('בדיקת קלט · תור').first().json.phone }) }}",
+        "options": {
+          "timeout": 15000
+        }
+      },
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "Cc2m5CGFkJs0bCvH",
+          "name": "Roey - קליניקת אורה · מפתח CRM"
+        }
+      },
+      "onError": "continueErrorOutput"
     }
   ],
   "connections": {
@@ -564,7 +758,7 @@
         ],
         [
           {
-            "node": "כשל · פנייה",
+            "node": "שגיאה זמנית? · פנייה",
             "type": "main",
             "index": 0
           }
@@ -655,7 +849,7 @@
         ],
         [
           {
-            "node": "כשל · תור",
+            "node": "שגיאה זמנית? · תור",
             "type": "main",
             "index": 0
           }
@@ -773,6 +967,122 @@
         [
           {
             "node": "החזרה לסוכן · תור",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "שגיאה זמנית? · פנייה": {
+      "main": [
+        [
+          {
+            "node": "לנסות שוב? · פנייה",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "לנסות שוב? · פנייה": {
+      "main": [
+        [
+          {
+            "node": "המתנה · פנייה",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "כשל · פנייה",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "המתנה · פנייה": {
+      "main": [
+        [
+          {
+            "node": "Supabase · פתיחת קריאה · ניסיון שני",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Supabase · פתיחת קריאה · ניסיון שני": {
+      "main": [
+        [
+          {
+            "node": "תשובה · פנייה",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "כשל · פנייה",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "שגיאה זמנית? · תור": {
+      "main": [
+        [
+          {
+            "node": "לנסות שוב? · תור",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "לנסות שוב? · תור": {
+      "main": [
+        [
+          {
+            "node": "המתנה · תור",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "כשל · תור",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "המתנה · תור": {
+      "main": [
+        [
+          {
+            "node": "Supabase · התור הבא · ניסיון שני",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Supabase · התור הבא · ניסיון שני": {
+      "main": [
+        [
+          {
+            "node": "תשובה · תור",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "כשל · תור",
             "type": "main",
             "index": 0
           }
