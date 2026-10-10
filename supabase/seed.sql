@@ -16,7 +16,9 @@ insert into public.customers (full_name, phone, source, notes) values
   ('קרן וקנין', '0535550112', 'other', null),
   ('סיון נחום', '0585550113', 'referral', null),
   ('גלית אשכנזי', '0585550114', 'whatsapp', null),
-  ('מאיה טל', '0585550115', 'instagram', 'לקוחת בדיקה לסוכן: בלי תור')
+  ('מאיה טל', '0585550115', 'instagram', 'לקוחת בדיקה לסוכן: בלי תור'),
+  ('רוני גל', '0585550116', 'facebook', 'לקוחת בדיקה לסוכן: תור מבוטל קרוב ותור עתידי רחוק'),
+  ('שירה דהן', '0585550117', 'website', 'לקוחת בדיקה לסוכן: רק תור מבוטל')
 on conflict (phone) do nothing;
 
 do $$
@@ -24,9 +26,10 @@ declare
   v_liat uuid := (select id from public.staff where email = 'liat@clinic-ora.co.il');
   v_neta uuid := (select id from public.staff where email = 'neta@clinic-ora.co.il');
   v_rotem uuid := (select id from public.staff where email = 'rotem@clinic-ora.co.il');
-  -- 052-555-0101 has exactly one future appointment and 058-555-0115 none: both are agent test cases
+  -- agent test cases, kept out of the random pool: 052-555-0101 has exactly one future appointment,
+  -- 058-555-0115 none, 058-555-0116 a cancelled one before a scheduled one, 058-555-0117 only a cancelled one
   v_pool uuid[] := array(select id from public.customers
-                         where phone not in ('0525550101', '0585550115') order by phone);
+                         where phone not in ('0525550101', '0585550115', '0585550116', '0585550117') order by phone);
   v_day date;
   v_i int := 0;
   v_slots time[];
@@ -62,4 +65,19 @@ begin
   insert into public.appointments (customer_id, treatment_id, staff_id, starts_at, duration_minutes, status, notes)
   select c.id, 6, v_liat, (v_next + time '11:30') at time zone 'Asia/Jerusalem', 60, 'scheduled', 'דמו'
   from public.customers c where c.phone = '0525550101';
+
+  -- "התור הבא" מדלג על תור מבוטל: ל-058-555-0116 תור מבוטל בעוד 3 ימים ותור עתידי בעוד כ-20 יום,
+  -- ול-058-555-0117 רק תור מבוטל בעוד 5 ימים
+  delete from public.appointments a using public.customers c
+   where c.id = a.customer_id and c.phone in ('0585550116', '0585550117') and a.starts_at > now();
+  insert into public.appointments (customer_id, treatment_id, staff_id, starts_at, duration_minutes, status, cancel_reason, notes)
+  -- weekdays only (Sunday-Thursday), so the slot is inside opening hours
+  select c.id, x.treat, v_neta, ((current_date + x.days + case extract(dow from current_date + x.days)::int when 5 then 2 when 6 then 1 else 0 end)
+         + x.at) at time zone 'Asia/Jerusalem', t.duration_minutes, x.status::appointment_status,
+         x.reason::cancel_reason, 'דמו'
+  from (values ('0585550116', 3, time '10:00', 4, 'cancelled', 'customer'),
+               ('0585550116', 20, time '12:30', 5, 'scheduled', null),
+               ('0585550117', 5, time '16:00', 4, 'cancelled', 'customer')) as x(phone, days, at, treat, status, reason)
+  join public.customers c on c.phone = x.phone
+  join public.treatments t on t.id = x.treat;
 end $$;

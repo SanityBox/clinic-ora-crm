@@ -115,7 +115,7 @@
         "specifyBody": "json",
         "jsonBody": "={{ JSON.stringify({ p_name: $json.name, p_phone: $json.phone, p_description: ($json.request_type ? '[' + $json.request_type + '] ' : '') + $json.description, p_request_type: $json.request_type || null }) }}",
         "options": {
-          "timeout": 15000
+          "timeout": 8000
         }
       },
       "credentials": {
@@ -294,7 +294,7 @@
         "specifyBody": "json",
         "jsonBody": "={{ JSON.stringify({ p_phone: $json.phone }) }}",
         "options": {
-          "timeout": 15000
+          "timeout": 8000
         }
       },
       "credentials": {
@@ -594,7 +594,7 @@
         "specifyBody": "json",
         "jsonBody": "={{ JSON.stringify({ p_name: $('בדיקת קלט · פנייה').first().json.name, p_phone: $('בדיקת קלט · פנייה').first().json.phone, p_description: ($('בדיקת קלט · פנייה').first().json.request_type ? '[' + $('בדיקת קלט · פנייה').first().json.request_type + '] ' : '') + $('בדיקת קלט · פנייה').first().json.description, p_request_type: $('בדיקת קלט · פנייה').first().json.request_type || null }) }}",
         "options": {
-          "timeout": 15000
+          "timeout": 8000
         }
       },
       "credentials": {
@@ -694,7 +694,7 @@
         "specifyBody": "json",
         "jsonBody": "={{ JSON.stringify({ p_phone: $('בדיקת קלט · תור').first().json.phone }) }}",
         "options": {
-          "timeout": 15000
+          "timeout": 8000
         }
       },
       "credentials": {
@@ -1094,6 +1094,12 @@
     "executionOrder": "v1",
     "saveDataSuccessExecution": "all",
     "saveDataErrorExecution": "all",
-    "errorWorkflow": "6tgTESvRiq0H4L7F"
-  }
+    "errorWorkflow": "6tgTESvRiq0H4L7F",
+    "timezone": "Asia/Jerusalem"
+  },
+  "tags": [
+    {
+      "name": "קליניקת אורה"
+    }
+  ]
 }

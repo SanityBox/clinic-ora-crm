@@ -62,6 +62,22 @@
         }
       },
       "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "content": "## תהליך שגיאות\nמוגדר כ-errorWorkflow של שני התהליכים האחרים. כל נפילה לא צפויה נרשמת כתקלה ב-CRM ומופיעה בבאנר האדום במסך הראשי. חייב להיות מפורסם (n8n 2.x).",
+        "height": 200,
+        "width": 420,
+        "color": 7
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "name": "הסבר",
+      "position": [
+        0,
+        -260
+      ],
+      "id": "sticky-6tgTES"
     }
   ],
   "connections": {
@@ -91,6 +107,12 @@
   "settings": {
     "executionOrder": "v1",
     "saveDataSuccessExecution": "all",
-    "saveDataErrorExecution": "all"
-  }
+    "saveDataErrorExecution": "all",
+    "timezone": "Asia/Jerusalem"
+  },
+  "tags": [
+    {
+      "name": "קליניקת אורה"
+    }
+  ]
 }

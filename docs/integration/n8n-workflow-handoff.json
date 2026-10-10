@@ -237,6 +237,22 @@
         }
       },
       "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "content": "## העברה לנציגה ב-CloudChat\nנקרא מהתהליך הראשי (בלי לחכות לו). מסמן את השיחה כפתוחה, מוסיף תגית ומשייך לנציגה התורנית. אם ההעברה עצמה נכשלת, נרשמת תקלה ב-CRM.",
+        "height": 200,
+        "width": 420,
+        "color": 7
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "name": "הסבר",
+      "position": [
+        0,
+        -360
+      ],
+      "id": "sticky-FaanuX"
     }
   ],
   "connections": {
@@ -345,6 +361,12 @@
     "executionOrder": "v1",
     "saveDataSuccessExecution": "all",
     "saveDataErrorExecution": "all",
-    "errorWorkflow": "6tgTESvRiq0H4L7F"
-  }
+    "errorWorkflow": "6tgTESvRiq0H4L7F",
+    "timezone": "Asia/Jerusalem"
+  },
+  "tags": [
+    {
+      "name": "קליניקת אורה"
+    }
+  ]
 }
