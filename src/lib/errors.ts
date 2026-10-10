@@ -6,6 +6,7 @@ export type ActionState = {
   fieldErrors?: Record<string, string>;
   existingCustomer?: { id: string; name: string };
   overlaps?: Overlap[];
+  overlapKey?: string;
 } | null;
 
 type PgError = { code?: string; message?: string; details?: string | null } | null;

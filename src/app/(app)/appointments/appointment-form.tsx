@@ -150,6 +150,7 @@ export function AppointmentForm({
         </Field>
       </fieldset>
 
+      {state?.overlapKey && <input type="hidden" name="overlap_key" value={state.overlapKey} />}
       {state?.overlaps && (
         <div className="flex flex-col gap-1 rounded-[10px] bg-tone-amber-bg px-3 py-2 text-sm text-tone-amber" role="alert">
           <p className="flex items-center gap-2 font-medium">

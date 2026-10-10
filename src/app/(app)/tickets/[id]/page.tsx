@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 import { CheckCircle2, PlayCircle } from "lucide-react";
 import { requireStaff } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
-import { getFormOptions } from "@/lib/options";
+import { getFormOptions, withCurrentStaff } from "@/lib/options";
 import { ageLabel, formatDateTime, formatPhone, isOverdue } from "@/lib/format";
 import { label, ticketPriority, ticketSource, ticketStatus } from "@/lib/labels";
 import { Chip, Ltr, PageHeader, Section } from "@/components/ui";
@@ -22,7 +22,7 @@ export default async function TicketPage({ params }: PageProps<"/tickets/[id]">)
   const [{ data: ticket }, { data: activity }, { staff: team }] = await Promise.all([
     supabase
       .from("tickets")
-      .select("*, customers(id, full_name, phone), creator:staff!tickets_created_by_fkey(full_name)")
+      .select("*, customers(id, full_name, phone), creator:staff!tickets_created_by_fkey(full_name), assignee:staff!tickets_assignee_id_fkey(id, full_name, is_active, role)")
       .eq("id", id)
       .maybeSingle(),
     supabase
@@ -123,7 +123,7 @@ export default async function TicketPage({ params }: PageProps<"/tickets/[id]">)
           priority: ticket.priority,
           source: ticket.source,
         }}
-        staff={team}
+        staff={withCurrentStaff(team, ticket.assignee)}
         cancelHref="/tickets"
       />
 

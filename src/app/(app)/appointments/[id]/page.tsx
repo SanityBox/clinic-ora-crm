@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 import { CheckCircle2 } from "lucide-react";
 import { requireStaff } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
-import { getFormOptions } from "@/lib/options";
+import { getFormOptions, withCurrentStaff } from "@/lib/options";
 import { formatDateTime, isoDateInIsrael, timeInIsrael, requestTime } from "@/lib/format";
 import { appointmentStatus, cancelReason, label } from "@/lib/labels";
 import { Chip, Ltr, PageHeader, Section } from "@/components/ui";
@@ -22,7 +22,7 @@ export default async function AppointmentPage({ params }: PageProps<"/appointmen
   const [{ data: appt }, { data: activity }, options] = await Promise.all([
     supabase
       .from("appointments")
-      .select("*, customers(id, full_name, phone), treatments(name), creator:staff!appointments_created_by_fkey(full_name)")
+      .select("*, customers(id, full_name, phone), treatments(name), creator:staff!appointments_created_by_fkey(full_name), therapist:staff!appointments_staff_id_fkey(id, full_name, is_active, role)")
       .eq("id", id)
       .maybeSingle(),
     supabase
@@ -87,7 +87,7 @@ export default async function AppointmentPage({ params }: PageProps<"/appointmen
           notes: appt.notes,
         }}
         treatments={options.treatments.filter((t) => t.is_active || t.id === appt.treatment_id)}
-        staff={options.staff}
+        staff={withCurrentStaff(options.staff, appt.therapist)}
         cancelHref={`/customers/${appt.customer_id}`}
       />
 

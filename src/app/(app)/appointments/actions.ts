@@ -46,7 +46,10 @@ export async function saveAppointment(_prev: ActionState, formData: FormData): P
   const supabase = await createClient();
 
   // BR-08ג: a warning, not a block. Some overlaps are intentional (another client while numbing cream takes effect).
-  if (row.status === "scheduled" && str(formData, "confirm_overlap") !== "1") {
+  // "save anyway" applies only to the values that were checked; if the time or therapist changed since, check again.
+  const overlapKey = [customerId, row.staff_id ?? "", date, time, duration].join("|");
+  const confirmed = str(formData, "confirm_overlap") === "1" && str(formData, "overlap_key") === overlapKey;
+  if (row.status === "scheduled" && !confirmed) {
     const start = israelLocalToDate(date, time).getTime();
     const end = start + duration * 60_000;
     const { data: nearby, error } = await supabase
@@ -72,7 +75,7 @@ export async function saveAppointment(_prev: ActionState, formData: FormData): P
         staff: a.staff?.full_name ?? "",
       });
     }
-    if (overlaps.length) return { overlaps };
+    if (overlaps.length) return { overlaps, overlapKey };
   }
 
   let savedId = id;

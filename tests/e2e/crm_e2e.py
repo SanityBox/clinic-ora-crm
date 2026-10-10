@@ -136,6 +136,13 @@ async def overlap_path(page):
         await page.screenshot(path=str(OUT / "appointment-overlap-desktop.png"), full_page=True)
         steps.append(("אזהרת חפיפה למטפלת, והתור לא נשמר", "/appointments/new" in page.url))
 
+        # "save anyway" covers only the checked values: a new time (still overlapping) is checked again, not saved
+        await page.fill("#time", "10:30")
+        await page.click("button:has-text('לשמור בכל זאת')")
+        await page.wait_for_load_state("networkidle")
+        await page.wait_for_timeout(1500)
+        steps.append(("שינוי שעה אחרי האזהרה נבדק מחדש", "/appointments/new" in page.url and "כבר בטיפול" in await page.inner_text("form:has(#treatment_id)")))
+
         await page.click("button:has-text('לשמור בכל זאת')")
         await page.wait_for_url(left_form, timeout=20000)
         steps.append(("'לשמור בכל זאת' שומר", True))

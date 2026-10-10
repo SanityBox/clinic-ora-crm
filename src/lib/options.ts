@@ -16,3 +16,11 @@ export async function getCustomerOption(id: string | undefined | null): Promise<
   const { data } = await supabase.from("customers").select("id, full_name, phone").eq("id", id).maybeSingle();
   return data;
 }
+
+type StaffRef = { id: string; full_name: string; is_active: boolean; role: string };
+
+/** Keeps the current therapist/assignee in the edit list even when she is inactive or view-only, so saving does not unassign her (PRD 8.5). */
+export function withCurrentStaff<T extends { id: string; full_name: string }>(staff: T[], current: StaffRef | null): { id: string; full_name: string }[] {
+  if (!current || staff.some((s) => s.id === current.id)) return staff;
+  return [...staff, { id: current.id, full_name: `${current.full_name} (${current.is_active ? "צפייה בלבד" : "לא פעילה"})` }];
+}
