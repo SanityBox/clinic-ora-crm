@@ -5,8 +5,8 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { requireAdmin, requireWriter } from "@/lib/auth";
-import { dbErrorMessage, optional, str, type ActionState } from "@/lib/errors";
-import { israelLocalToTimestamptz } from "@/lib/format";
+import { dbErrorMessage, optional, str, type ActionState, type Overlap } from "@/lib/errors";
+import { formatTime, israelLocalToDate, israelLocalToTimestamptz } from "@/lib/format";
 
 const STATUSES = ["scheduled", "completed", "cancelled"];
 const REASONS = ["customer", "clinic", "no_show"];
@@ -44,6 +44,37 @@ export async function saveAppointment(_prev: ActionState, formData: FormData): P
   };
 
   const supabase = await createClient();
+
+  // BR-08ג: a warning, not a block. Some overlaps are intentional (another client while numbing cream takes effect).
+  if (row.status === "scheduled" && str(formData, "confirm_overlap") !== "1") {
+    const start = israelLocalToDate(date, time).getTime();
+    const end = start + duration * 60_000;
+    const { data: nearby, error } = await supabase
+      .from("appointments")
+      .select("id, starts_at, duration_minutes, staff_id, customer_id, customers(full_name), treatments(name), staff:staff!appointments_staff_id_fkey(full_name)")
+      .eq("status", "scheduled")
+      .gte("starts_at", new Date(start - 480 * 60_000).toISOString())
+      .lt("starts_at", new Date(end).toISOString());
+    if (error) return dbErrorMessage(error);
+    const overlaps: Overlap[] = [];
+    for (const a of nearby) {
+      const aStart = new Date(a.starts_at).getTime();
+      const aEnd = aStart + a.duration_minutes * 60_000;
+      if (a.id === id || aEnd <= start) continue;
+      const kind = row.staff_id && a.staff_id === row.staff_id ? "staff" : a.customer_id === customerId ? "customer" : null;
+      if (!kind) continue;
+      overlaps.push({
+        id: a.id,
+        kind,
+        when: `${formatTime(a.starts_at)}–${formatTime(new Date(aEnd))}`,
+        customer: a.customers?.full_name ?? "",
+        treatment: a.treatments?.name ?? "",
+        staff: a.staff?.full_name ?? "",
+      });
+    }
+    if (overlaps.length) return { overlaps };
+  }
+
   let savedId = id;
   if (id) {
     const { error } = await supabase.from("appointments").update(row).eq("id", id);

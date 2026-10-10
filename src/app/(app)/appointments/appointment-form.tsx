@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useActionState, useState } from "react";
 import { AlertTriangle } from "lucide-react";
 import { saveAppointment } from "./actions";
-import { Field, FormError } from "@/components/ui";
+import { Field, FormError, Ltr } from "@/components/ui";
 import { SubmitButton, submitKeepingFields } from "@/components/client";
 import { CustomerPicker } from "@/components/customer-picker";
 import type { CustomerOption } from "@/app/(app)/customers/actions";
@@ -150,9 +150,34 @@ export function AppointmentForm({
         </Field>
       </fieldset>
 
+      {state?.overlaps && (
+        <div className="flex flex-col gap-1 rounded-[10px] bg-tone-amber-bg px-3 py-2 text-sm text-tone-amber" role="alert">
+          <p className="flex items-center gap-2 font-medium">
+            <AlertTriangle size={16} aria-hidden /> חפיפה בזמנים
+          </p>
+          <ul className="flex flex-col gap-1">
+            {state.overlaps.map((o) => (
+              <li key={o.id}>
+                <Link href={`/appointments/${o.id}`} className="underline">
+                  {o.kind === "staff" ? `${o.staff} כבר בטיפול ` : "ללקוחה כבר יש תור "}
+                  <Ltr>{o.when}</Ltr>
+                  {o.kind === "staff" ? ` עם ${o.customer} (${o.treatment})` : ` (${o.treatment}${o.staff ? `, ${o.staff}` : ""})`}
+                </Link>
+              </li>
+            ))}
+          </ul>
+          <p>אפשר לשנות שעה או מטפלת, או לשמור בכל זאת.</p>
+        </div>
+      )}
+
       {!readOnly && (
         <div className="flex flex-wrap gap-2 border-t border-line pt-4">
           <SubmitButton pending={pending}>שמירה</SubmitButton>
+          {state?.overlaps && (
+            <button type="submit" name="confirm_overlap" value="1" className="btn btn-secondary" disabled={pending}>
+              לשמור בכל זאת
+            </button>
+          )}
           <Link href={cancelHref} className="btn btn-secondary">
             ביטול
           </Link>

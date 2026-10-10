@@ -1,8 +1,11 @@
 // Maps database errors to the Hebrew messages defined in PRD 11.2. Never shows a technical message to the user.
+export type Overlap = { id: string; kind: "staff" | "customer"; when: string; customer: string; treatment: string; staff: string };
+
 export type ActionState = {
   error?: string;
   fieldErrors?: Record<string, string>;
   existingCustomer?: { id: string; name: string };
+  overlaps?: Overlap[];
 } | null;
 
 type PgError = { code?: string; message?: string; details?: string | null } | null;

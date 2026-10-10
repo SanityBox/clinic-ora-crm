@@ -34,7 +34,7 @@ export default async function AppointmentsPage({ searchParams }: PageProps<"/app
   const supabase = await createClient();
   let query = supabase
     .from("appointments")
-    .select("id, starts_at, status, cancel_reason, customer_id, customers(full_name, phone), treatments(name), staff:staff!appointments_staff_id_fkey(full_name)")
+    .select("id, starts_at, duration_minutes, status, cancel_reason, customer_id, staff_id, customers(full_name, phone), treatments(name), staff:staff!appointments_staff_id_fkey(full_name)")
     .limit(200);
 
   if (range === "today") query = query.gte("starts_at", dayStart(today)).lt("starts_at", dayStart(addDays(today, 1)));
@@ -47,6 +47,21 @@ export default async function AppointmentsPage({ searchParams }: PageProps<"/app
 
   const [{ data: appts, error }, { staff: team }] = await Promise.all([query, getFormOptions()]);
   if (error) throw new Error(error.message);
+
+  // BR-08ג: scheduled appointments that share a time window with another scheduled one of the same therapist or client.
+  const overlapping = new Set<string>();
+  const scheduled = (appts ?? []).filter((a) => a.status === "scheduled");
+  for (const a of scheduled) {
+    const aStart = new Date(a.starts_at).getTime();
+    for (const b of scheduled) {
+      if (a.id >= b.id || !((a.staff_id && a.staff_id === b.staff_id) || a.customer_id === b.customer_id)) continue;
+      const bStart = new Date(b.starts_at).getTime();
+      if (aStart < bStart + b.duration_minutes * 60_000 && bStart < aStart + a.duration_minutes * 60_000) {
+        overlapping.add(a.id);
+        overlapping.add(b.id);
+      }
+    }
+  }
 
   const qs = (patch: Record<string, string>) => {
     const p = new URLSearchParams({ range, status, staff: therapist, ...patch });
@@ -128,6 +143,7 @@ export default async function AppointmentsPage({ searchParams }: PageProps<"/app
                   <div className="col-start-2 flex flex-wrap gap-1.5 sm:col-start-auto sm:justify-end">
                     <Chip tone={a.cancel_reason === "no_show" ? "red" : st.tone}>{a.cancel_reason ? label(cancelReason, a.cancel_reason) : st.label}</Chip>
                     {needsUpdate && <Chip tone="amber">לעדכן סטטוס</Chip>}
+                    {overlapping.has(a.id) && <Chip tone="amber">חופף</Chip>}
                   </div>
                 </Link>
               </li>

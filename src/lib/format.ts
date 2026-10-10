@@ -40,6 +40,21 @@ export function israelLocalToTimestamptz(date: string, time: string): string {
   return `${date} ${time}:00 ${TZ}`;
 }
 
+const wallClockFmt = new Intl.DateTimeFormat("en-US", {
+  timeZone: TZ, hourCycle: "h23", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit",
+});
+
+/** The same moment as israelLocalToTimestamptz, as a Date, for comparing times in JS. */
+export function israelLocalToDate(date: string, time: string): Date {
+  const asUtc = Date.parse(`${date}T${time}:00Z`);
+  const offset = (t: number) => {
+    const p = Object.fromEntries(wallClockFmt.formatToParts(t).map((x) => [x.type, x.value]));
+    return Date.UTC(+p.year, +p.month - 1, +p.day, +p.hour % 24, +p.minute) - t;
+  };
+  // second pass corrects the offset when the guess and the answer fall on different sides of a DST change
+  return new Date(asUtc - offset(asUtc - offset(asUtc)));
+}
+
 export function addDays(isoDate: string, days: number): string {
   const [y, m, d] = isoDate.split("-").map(Number);
   const dt = new Date(Date.UTC(y, m - 1, d + days));

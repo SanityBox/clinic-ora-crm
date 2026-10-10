@@ -11,7 +11,8 @@ import { CheckCircle2, AlertTriangle } from "lucide-react";
 export function submitKeepingFields(action: (fd: FormData) => void) {
   return (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    const fd = new FormData(e.currentTarget);
+    // The submitter carries the button's name/value (e.g. confirm_overlap), which plain FormData(form) drops.
+    const fd = new FormData(e.currentTarget, (e.nativeEvent as SubmitEvent).submitter);
     startTransition(() => action(fd));
   };
 }

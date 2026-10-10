@@ -3,7 +3,8 @@
 Usage: python crm_e2e.py <base url> <state file> <out dir> [--write]
 Per screen, desktop 1280 and phone 375: HTTP status, horizontal overflow, html dir=rtl,
 phone numbers inside an LTR element, axe-core serious/critical violations, and a screenshot.
---write also runs the customer happy path: create, edit, check after reload, delete.
+--write also runs the customer happy path: create, edit, check after reload, delete,
+and the overlapping-appointment warning (BR-08ג).
 """
 import asyncio, json, re, sys
 from pathlib import Path
@@ -97,6 +98,56 @@ async def happy_path(page):
     return steps
 
 
+async def overlap_path(page):
+    """BR-08ג: a second appointment in the same window warns (client, then therapist) and saves only on 'לשמור בכל זאת'."""
+    steps = []
+    await page.goto(BASE + "/customers/new", wait_until="networkidle")
+    await page.fill("#full_name", "חפיפה E2E")
+    await page.fill("#phone", "054-999-0003")
+    await page.click("form:has(#full_name) button[type=submit]")
+    await page.wait_for_url(re.compile(r"/customers/[0-9a-f-]{36}"), timeout=20000)
+    card = page.url.split("?")[0]
+    customer_id = card.rsplit("/", 1)[1]
+
+    # the toast param is removed from the URL once shown, so wait for leaving the form instead
+    left_form = lambda url: "/appointments/new" not in url
+
+    async def fill(staff_index):
+        await page.goto(f"{BASE}/appointments/new?customer={customer_id}", wait_until="networkidle")
+        await page.select_option("#treatment_id", index=1)
+        await page.select_option("#staff_id", index=staff_index)
+        await page.fill("#date", "2027-01-05")
+        await page.fill("#time", "10:00")
+
+    try:
+        await fill(1)
+        await page.click("button[type=submit]:has-text('שמירה')")
+        await page.wait_for_url(left_form, timeout=20000)
+        steps.append(("תור ראשון נשמר בלי אזהרה", True))
+
+        await fill(0)
+        await page.click("button[type=submit]:has-text('שמירה')")
+        await page.wait_for_selector("text=חפיפה בזמנים", timeout=20000)
+        steps.append(("אזהרת חפיפה ללקוחה", "ללקוחה כבר יש תור" in await page.inner_text("form:has(#treatment_id)")))
+
+        await page.select_option("#staff_id", index=1)
+        await page.click("button[type=submit]:has-text('שמירה')")
+        await page.wait_for_selector("text=כבר בטיפול", timeout=20000)
+        await page.screenshot(path=str(OUT / "appointment-overlap-desktop.png"), full_page=True)
+        steps.append(("אזהרת חפיפה למטפלת, והתור לא נשמר", "/appointments/new" in page.url))
+
+        await page.click("button:has-text('לשמור בכל זאת')")
+        await page.wait_for_url(left_form, timeout=20000)
+        steps.append(("'לשמור בכל זאת' שומר", True))
+    except Exception as e:
+        steps.append(("overlap path", f"error after {len(steps)} steps: {str(e)[:150]}"))
+    finally:
+        await page.goto(card, wait_until="networkidle")
+        await page.click("text=מחיקת הלקוחה")
+        await page.wait_for_url(re.compile(r"/customers(\?|$)"), timeout=20000)
+    return steps
+
+
 async def main():
     OUT.mkdir(parents=True, exist_ok=True)
     results, steps = [], []
@@ -115,6 +166,10 @@ async def main():
                     steps = await happy_path(page)
                 except Exception as e:
                     steps.append(("happy path", f"error: {str(e)[:150]}"))
+                try:
+                    steps += await overlap_path(page)
+                except Exception as e:
+                    steps.append(("overlap path", f"error: {str(e)[:150]}"))
             await ctx.close()
         await browser.close()
     (OUT / "results.json").write_text(json.dumps({"screens": results, "happy_path": steps}, ensure_ascii=False, indent=2), encoding="utf-8")
