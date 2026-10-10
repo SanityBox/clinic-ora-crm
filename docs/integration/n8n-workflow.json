@@ -375,7 +375,7 @@
         260
       ],
       "parameters": {
-        "jsCode": "// Human handoff inside CloudChat (exam Q4-5, \"התראה לבן אדם\"): a saved human request, or a CRM failure that is not a input error\nconst r = $input.first().json.response || {};\nconst inp = $('בדיקת קלט · פנייה').first().json;\nconst inputErrors = ['invalid_phone', 'clinic_phone', 'missing_description', 'invalid_input'];\nlet tag = null;\nif (r.ok === true && inp.request_type === 'בקשת נציגה') tag = 'ביקשו נציגה';\nelse if (r.ok !== true && !inputErrors.includes(r.error)) tag = 'CRM נכשל - לטפל ידנית';\nreturn [{ json: { response: r, handoff: Boolean(tag && inp.raw_phone), tag, raw_phone: inp.raw_phone } }];"
+        "jsCode": "// Human handoff inside CloudChat (exam Q4-5, \"התראה לבן אדם\"): a saved human request, or a CRM failure that is not a input error\n// CloudChat team member who gets the desktop alert for chats assigned to her (the clinic: Rotem; this demo workspace has one member, Roey)\nconst ON_DUTY_AGENT_ID = 296139;\nconst r = $input.first().json.response || {};\nconst inp = $('בדיקת קלט · פנייה').first().json;\nconst inputErrors = ['invalid_phone', 'clinic_phone', 'missing_description', 'invalid_input'];\nlet tag = null;\nif (r.ok === true && inp.request_type === 'בקשת נציגה') tag = 'ביקשו נציגה';\nelse if (r.ok !== true && !inputErrors.includes(r.error)) tag = 'CRM נכשל - לטפל ידנית';\nreturn [{ json: { response: r, handoff: Boolean(tag && inp.raw_phone), tag, raw_phone: inp.raw_phone, agent_id: ON_DUTY_AGENT_ID } }];"
       }
     },
     {
@@ -515,12 +515,41 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        2440,
+        2660,
         260
       ],
       "parameters": {
         "jsCode": "// the agent gets the CRM answer unchanged, whatever happened with the handoff\nreturn [{ json: { response: $('צריך נציגה? · פנייה').first().json.response } }];"
       }
+    },
+    {
+      "id": "80a9fa89-aae7-4766-a649-bbe114e5045f",
+      "name": "CloudChat · שיוך לנציגה התורנית",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2440,
+        160
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "https://console.thecloud.chat/api/subscriber/assign-agent",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {
+          "timeout": 15000
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ user_ns: $('בחירת השיחה האחרונה').first().json.user_ns, agent_id: $('צריך נציגה? · פנייה').first().json.agent_id }) }}"
+      },
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "COecLlGgnMP2e7DQ",
+          "name": "Roey - CloudChat API (אורה)"
+        }
+      },
+      "onError": "continueRegularOutput"
     }
   ],
   "connections": {
@@ -772,7 +801,7 @@
       "main": [
         [
           {
-            "node": "תשובה סופית · פנייה",
+            "node": "CloudChat · שיוך לנציגה התורנית",
             "type": "main",
             "index": 0
           }
@@ -784,6 +813,17 @@
         [
           {
             "node": "החזרה לסוכן · פנייה",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "CloudChat · שיוך לנציגה התורנית": {
+      "main": [
+        [
+          {
+            "node": "תשובה סופית · פנייה",
             "type": "main",
             "index": 0
           }
