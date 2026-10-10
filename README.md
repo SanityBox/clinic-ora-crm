@@ -33,6 +33,12 @@ npm run dev
 
 בסיס הנתונים נבנה מהקבצים ב-`supabase/migrations/` לפי הסדר.
 
+## גרסאות
+
+- כל שלב ב-[`docs/PLAN.md`](docs/PLAN.md) נשמר ב-commit משלו, ויש לו tag: `stage-00` (אפיון) עד `stage-27` (בדיקה מחדש של שלבי היסוד). רשימה: `git tag -n`. שחזור גרסה: `git switch --detach stage-15`.
+- כל push ל-`main` נפרס ב-Vercel כגרסה נפרדת, ואפשר לחזור לכל פריסה קודמת (Instant Rollback).
+- שינויי בסיס הנתונים נשמרים כ-migrations ב-`supabase/migrations/`, קובץ לכל שינוי ולפי הסדר.
+
 ## אבטחה
 
 - אין מפתחות בקוד. בדפדפן רק המפתח הציבורי (publishable), והגישה לנתונים נקבעת ב-RLS.
