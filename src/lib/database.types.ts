@@ -206,6 +206,8 @@ export type Database = {
           id: number
           message: string
           node: string | null
+          resolved_at: string | null
+          resolved_by: string | null
           source: string
         }
         Insert: {
@@ -214,6 +216,8 @@ export type Database = {
           id?: never
           message: string
           node?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
           source: string
         }
         Update: {
@@ -222,9 +226,19 @@ export type Database = {
           id?: never
           message?: string
           node?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
           source?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "integration_incidents_resolved_by_fkey"
+            columns: ["resolved_by"]
+            isOneToOne: false
+            referencedRelation: "staff"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       staff: {
         Row: {
@@ -434,6 +448,7 @@ export type Database = {
       is_active_staff: { Args: never; Returns: boolean }
       is_admin: { Args: never; Returns: boolean }
       normalize_phone: { Args: { p: string }; Returns: string }
+      resolve_incident: { Args: { p_id: number }; Returns: undefined }
     }
     Enums: {
       activity_action: "created" | "updated"

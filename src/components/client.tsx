@@ -33,6 +33,7 @@ const toastText: Record<string, { text: string; kind: "ok" | "warn" }> = {
   ticket_saved: { text: "הקריאה נשמרה", kind: "ok" },
   team_saved: { text: "השינוי נשמר", kind: "ok" },
   no_permission: { text: "אין הרשאה לפעולה הזו", kind: "warn" },
+  incident_resolved: { text: "התקלה סומנה כמטופלת", kind: "ok" },
   save_failed: { text: "משהו השתבש והשינוי לא נשמר. אפשר לנסות שוב.", kind: "warn" },
 };
 

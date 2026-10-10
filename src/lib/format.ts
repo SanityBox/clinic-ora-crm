@@ -89,10 +89,6 @@ export function ageLabel(iso: string): string {
   return days === 1 ? "אתמול" : `לפני ${days} ימים`;
 }
 
-export function hoursAgoIso(hours: number): string {
-  return new Date(Date.now() - hours * 3600_000).toISOString();
-}
-
 export const OVERDUE_HOURS = 48;
 
 export function isOverdue(createdAt: string, status: string): boolean {

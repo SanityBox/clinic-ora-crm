@@ -3,8 +3,9 @@ import Link from "next/link";
 import { CalendarPlus, Headset, MessageCirclePlus, TriangleAlert, UserPlus } from "lucide-react";
 import { requireStaff } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
-import { addDays, ageLabel, formatTime, hoursAgoIso, isoDateInIsrael, isOverdue, TZ } from "@/lib/format";
+import { addDays, ageLabel, formatTime, isoDateInIsrael, isOverdue, TZ } from "@/lib/format";
 import { appointmentStatus, cancelReason, label, ticketStatus } from "@/lib/labels";
+import { resolveIncident } from "./incident-actions";
 import { Chip, EmptyState, Ltr, PageHeader, Section, Stat } from "@/components/ui";
 
 export const metadata: Metadata = { title: "מסך ראשי" };
@@ -49,11 +50,11 @@ export default async function DashboardPage() {
       .eq("priority", "urgent")
       .eq("status", "new")
       .order("created_at"),
-    // n8n reports integration failures here (error workflow, failed CloudChat handoff)
+    // n8n reports integration failures here (error workflow, failed CloudChat handoff); shown until someone marks it handled
     supabase
       .from("integration_incidents")
       .select("id, source, node, message, created_at")
-      .gte("created_at", hoursAgoIso(24))
+      .is("resolved_at", null)
       .order("created_at", { ascending: false })
       .limit(5),
   ]);
@@ -107,7 +108,7 @@ export default async function DashboardPage() {
           <h2 id="incidents" className="mb-1 flex items-center gap-2 font-semibold text-tone-red">
             <TriangleAlert size={20} aria-hidden /> תקלה בחיבור לסוכן · {incidents.length}
           </h2>
-          <p className="mb-2 text-sm text-ink-soft">ב-24 השעות האחרונות. פניות מהזמן הזה כדאי לבדוק גם ב-CloudChat.</p>
+          <p className="mb-2 text-sm text-ink-soft">מוצגות עד שמסמנים &quot;טופל&quot;. פניות מהזמן הזה כדאי לבדוק גם ב-CloudChat.</p>
           <ul className="flex flex-col">
             {incidents.map((i) => (
               <li key={i.id} className="flex min-h-11 flex-wrap items-center gap-x-2 gap-y-1 border-b border-line py-2 last:border-0">
@@ -116,6 +117,12 @@ export default async function DashboardPage() {
                 <span className="min-w-0 flex-1 truncate text-sm text-ink-soft">
                   {i.message.split(/(0\d{1,2}-?\d{3}-?\d{4})/).map((part, k) => (k % 2 ? <Ltr key={k}>{part}</Ltr> : part))}
                 </span>
+                {staff.canWrite && (
+                  <form action={resolveIncident}>
+                    <input type="hidden" name="id" value={i.id} />
+                    <button type="submit" className="btn btn-secondary min-h-11">טופל</button>
+                  </form>
+                )}
               </li>
             ))}
           </ul>
