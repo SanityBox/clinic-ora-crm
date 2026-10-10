@@ -65,3 +65,13 @@ Use this function when the customer asks about their next or upcoming appointmen
 ## בשלב שאלה 4 בלבד (לפני החיבור ל-CRM)
 
 הפונקציות שומרות את הפרטים בשדות הסוכן (Save value to), ו-AI Function Result מחזיר `{"ok": true, "saved": true}`, כך שהפנייה נשמרת בשדות של הלקוחה ב-CloudChat. בשאלה 5 נוספת הקריאה ל-n8n בין שמירת השדות לבין ההחזרה לסוכן.
+
+## Memory בפרמטרים (שלב 29)
+
+| פונקציה | פרמטר | Memory | למה |
+|---|---|---|---|
+| `open_service_ticket` | `customer_name`, `customer_phone` | כן | לא שואלים שוב באותה שיחה |
+| `open_service_ticket` | `request_description`, `request_type` | לא | פנייה שנייה היא נושא אחר |
+| `request_human` | `customer_name`, `customer_phone` | כן | כמו למעלה |
+| `request_human` | `summary` | לא | סיכום חדש לכל בקשה |
+| `get_next_appointment` | `customer_phone` | לא | כלל הפרטיות: רק מספר שהוקלד עכשיו |
