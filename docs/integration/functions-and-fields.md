@@ -13,8 +13,7 @@
 | `ora_request` | Text | תיאור הפנייה | `open_service_ticket` |
 | `ora_request_type` | Text | סוג הפנייה (תיאום תור / שאלה / בעיה אחרי טיפול / תלונה / אחר) | `open_service_ticket` |
 | `ora_intent` | Text | הכוונה האחרונה שזוהתה: `open_ticket` / `human_request` / `next_appointment` | ה-Workflow של כל פונקציה |
-| `ora_ticket_number` | Number | מספר הפנייה שחזר מה-CRM (שאלה 5) | Workflow אחרי שמירה מוצלחת |
-| `ora_crm_result` | Text | תשובת ה-CRM המלאה (JSON), לבקרה | Workflow |
+| `ora_crm_result` | Text | תשובת ה-CRM המלאה (JSON, כולל מספר הפנייה), לבקרה | Workflow |
 
 ## פונקציה 1: `open_service_ticket`
 
@@ -46,14 +45,14 @@ Use this function when the customer asks to talk to a human, is angry or frustra
 | `summary` | ✓ | One or two sentences in Hebrew for the staff: what the customer needs from a human and why (e.g. 'כועסת שחיכתה שעה ולא חזרו אליה'). Gender-neutral or feminine, never with slashes like 'ביקש/ה'. | `ora_request` |
 
 **Workflow:**
-1. Set Custom Field: `ora_intent` = `human_request`, תגית "בקשת נציגה".
+1. Set Custom Field: `ora_intent` = `human_request`. (התגית "ביקשו נציגה" נוספת לשיחה מ-n8n, בצעד 2.)
 2. (שאלה 5) אותה קריאה ל-n8n כמו פתיחת פנייה, עם תיאור "בקשה לשיחה עם נציגה: {סיכום}" ו-`request_type: "בקשת נציגה"`. לפי הסוג, ה-CRM פותח את הקריאה בעדיפות **דחופה**, והיא מופיעה בבאנר "ביקשו נציגה" במסך הראשי. n8n גם פותח את השיחה ב"איזור הצ'אטים" של CloudChat, מוסיף לה תגית ומשייך אותה לנציגה התורנית, שמקבלת התראה קופצת.
 3. AI Function Result.
 
 ## פונקציה 3: `get_next_appointment` (שאלה 5)
 
 **Function Prompt (מתי):**
-Use this function when the customer asks about their next or upcoming appointment ("מתי התור הבא שלי?"). Use the phone number already known from the conversation or channel; ask for it once if unknown. Answer only with what the function returns. Never guess an appointment.
+Use this function when the customer asks about their next or upcoming appointment ("מתי התור הבא שלי?"). Use only a phone number the customer typed in this conversation (in web chat anyone can type any number); ask for it once if missing. Answer only with what the function returns. Never guess an appointment.
 
 | Name | Required | Description | Save value to |
 |---|---|---|---|
