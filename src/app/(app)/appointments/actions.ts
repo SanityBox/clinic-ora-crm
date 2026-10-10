@@ -63,7 +63,8 @@ export async function markAppointmentCompleted(formData: FormData) {
   await requireWriter();
   const id = str(formData, "id");
   const supabase = await createClient();
-  await supabase.from("appointments").update({ status: "completed" }).eq("id", id);
+  const { error } = await supabase.from("appointments").update({ status: "completed" }).eq("id", id);
+  if (error) redirect(`/appointments/${id}?toast=save_failed`);
   revalidatePath("/", "layout");
   redirect(`/appointments/${id}?toast=appointment_saved`);
 }
@@ -73,7 +74,8 @@ export async function deleteAppointment(formData: FormData) {
   const id = str(formData, "id");
   const customerId = str(formData, "customer_id");
   const supabase = await createClient();
-  await supabase.from("appointments").delete().eq("id", id);
+  const { error } = await supabase.from("appointments").delete().eq("id", id);
+  if (error) redirect(`/appointments/${id}?toast=save_failed`);
   revalidatePath("/", "layout");
   redirect(`/customers/${customerId}?toast=appointment_saved`);
 }

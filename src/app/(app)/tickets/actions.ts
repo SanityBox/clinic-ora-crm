@@ -60,7 +60,8 @@ export async function startTicket(formData: FormData) {
   const staff = await requireWriter();
   const id = str(formData, "id");
   const supabase = await createClient();
-  await supabase.from("tickets").update({ status: "in_progress", assignee_id: staff.id }).eq("id", id);
+  const { error } = await supabase.from("tickets").update({ status: "in_progress", assignee_id: staff.id }).eq("id", id);
+  if (error) redirect(`/tickets/${id}?toast=save_failed`);
   revalidatePath("/", "layout");
   redirect(`/tickets/${id}?toast=ticket_saved`);
 }
@@ -69,7 +70,8 @@ export async function closeTicket(formData: FormData) {
   await requireWriter();
   const id = str(formData, "id");
   const supabase = await createClient();
-  await supabase.from("tickets").update({ status: "closed" }).eq("id", id);
+  const { error } = await supabase.from("tickets").update({ status: "closed" }).eq("id", id);
+  if (error) redirect(`/tickets/${id}?toast=save_failed`);
   revalidatePath("/", "layout");
   redirect(`/tickets/${id}?toast=ticket_saved`);
 }
@@ -78,7 +80,8 @@ export async function deleteTicket(formData: FormData) {
   await requireAdmin();
   const id = str(formData, "id");
   const supabase = await createClient();
-  await supabase.from("tickets").delete().eq("id", id);
+  const { error } = await supabase.from("tickets").delete().eq("id", id);
+  if (error) redirect(`/tickets/${id}?toast=save_failed`);
   revalidatePath("/", "layout");
   redirect("/tickets?toast=ticket_saved");
 }
