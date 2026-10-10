@@ -42,7 +42,7 @@ export default async function CustomerCardPage({ params }: PageProps<"/customers
   const now = requestTime();
   const appts = appointments ?? [];
   const upcoming = appts
-    .filter((a) => a.status !== "cancelled" && new Date(a.starts_at).getTime() > now)
+    .filter((a) => a.status === "scheduled" && new Date(a.starts_at).getTime() > now)
     .sort((a, b) => a.starts_at.localeCompare(b.starts_at));
   const history = appts.filter((a) => !upcoming.includes(a));
   const next = upcoming[0];

@@ -10,7 +10,7 @@ CloudChat (AI Function) ──POST + x-roey-key──▶ n8n webhook ──▶ C
 - workflow ב-n8n: `Roey - קליניקת אורה · סוכן ↔ CRM` (קובץ: [n8n-workflow.json](n8n-workflow.json), בלי סודות: רק מזהי credentials).
 - שני מסלולים:
   - `POST /webhook/roey-ora-create-ticket` עם `{name, phone, description, request_type}` → `agent_create_ticket`: מאתר לקוחה לפי טלפון או יוצר חדשה (מקור "סוכן AI"), ופותח קריאה בסטטוס "חדשה".
-  - `POST /webhook/roey-ora-next-appointment` עם `{phone}` → `agent_next_appointment`: התור העתידי הקרוב שלא בוטל. זו שליפה, אבל ב-POST: הטלפון עובר בגוף הבקשה ולא בכתובת, כך שהוא לא נשמר בלוגים של כתובות.
+  - `POST /webhook/roey-ora-next-appointment` עם `{phone}` → `agent_next_appointment`: התור הקרוב בסטטוס "עתידי" (BR-08). זו שליפה, אבל ב-POST: הטלפון עובר בגוף הבקשה ולא בכתובת, כך שהוא לא נשמר בלוגים של כתובות.
 - אבטחה בשתי שכבות: header auth על ה-webhook, ובבסיס הנתונים בדיקת sha256 של `x-agent-key` מול `private.integration_keys`. בלי מפתח, הפונקציה זורקת `unauthorized`.
 - בקובץ הייצוא `n8n-workflow.json` המפתח הציבורי של Supabase מופיע כ-`<SUPABASE_PUBLISHABLE_KEY>`. כשמייבאים, מחליפים אותו במפתח של הפרויקט. המפתחות הסודיים נמצאים רק בכספת ה-credentials של n8n, ולא נכנסים לייצוא.
 - הסוכן מקבל `ok:true` ומספר קריאה רק אחרי שהשמירה הצליחה. בכל כשל (קלט חסר, CRM לא זמין) חוזר `ok:false` עם הודעה, והסוכן לא מבטיח שנשמר.
