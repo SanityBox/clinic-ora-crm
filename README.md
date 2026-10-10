@@ -35,7 +35,7 @@ npm run dev
 
 ## גרסאות
 
-- כל שלב ב-[`docs/PLAN.md`](docs/PLAN.md) נשמר ב-commit משלו, ויש לו tag: `stage-00` (אפיון) עד `stage-27` (בדיקה מחדש של שלבי היסוד). רשימה: `git tag -n`. שחזור גרסה: `git switch --detach stage-15`.
+- כל שלב ב-[`docs/PLAN.md`](docs/PLAN.md) נשמר ב-commit משלו, ויש לו tag: `stage-00` (אפיון) עד `stage-28` (תיקונים מסקירה עצמית רביעית). רשימה: `git tag -n`. שחזור גרסה: `git switch --detach stage-15`.
 - כל push ל-`main` נפרס ב-Vercel כגרסה נפרדת, ואפשר לחזור לכל פריסה קודמת (Instant Rollback).
 - שינויי בסיס הנתונים נשמרים כ-migrations ב-`supabase/migrations/`, קובץ לכל שינוי ולפי הסדר.
 
