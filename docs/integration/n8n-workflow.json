@@ -375,7 +375,7 @@
         260
       ],
       "parameters": {
-        "jsCode": "// Human handoff inside CloudChat (exam Q4-5, \"התראה לבן אדם\"): a saved human request, or a CRM failure that is not a input error\n// CloudChat team member who gets the desktop alert for chats assigned to her (the clinic: Rotem; this demo workspace has one member, Roey)\nconst ON_DUTY_AGENT_ID = 296139;\nconst r = $input.first().json.response || {};\nconst inp = $('בדיקת קלט · פנייה').first().json;\nconst inputErrors = ['invalid_phone', 'clinic_phone', 'missing_description', 'invalid_input'];\nlet tag = null;\nif (r.ok === true && inp.request_type === 'בקשת נציגה') tag = 'ביקשו נציגה';\nelse if (r.ok !== true && !inputErrors.includes(r.error)) tag = 'CRM נכשל - לטפל ידנית';\nreturn [{ json: { response: r, handoff: Boolean(tag && inp.raw_phone), tag, raw_phone: inp.raw_phone, agent_id: ON_DUTY_AGENT_ID } }];"
+        "jsCode": "// Human handoff inside CloudChat (exam Q4-5, \"התראה לבן אדם\"): a saved human request, or a CRM failure that is not a input error\nconst r = $input.first().json.response || {};\nconst inp = $('בדיקת קלט · פנייה').first().json;\nconst inputErrors = ['invalid_phone', 'clinic_phone', 'missing_description', 'invalid_input'];\nlet tag = null;\nif (r.ok === true && inp.request_type === 'בקשת נציגה') tag = 'ביקשו נציגה';\nelse if (r.ok !== true && !inputErrors.includes(r.error)) tag = 'CRM נכשל - לטפל ידנית';\nreturn [{ json: { response: r, handoff: Boolean(tag && inp.raw_phone), tag, raw_phone: inp.raw_phone } }];"
       }
     },
     {
@@ -413,109 +413,12 @@
       }
     },
     {
-      "id": "bb93a268-8965-4035-9cf8-aacd9b1393d0",
-      "name": "CloudChat · איתור השיחה",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
-      "position": [
-        1560,
-        160
-      ],
-      "parameters": {
-        "method": "GET",
-        "url": "=https://console.thecloud.chat/api/subscribers?user_field_ns=f263073v17864389&user_field_value={{ encodeURIComponent($json.raw_phone) }}&limit=10",
-        "authentication": "genericCredentialType",
-        "genericAuthType": "httpHeaderAuth",
-        "options": {
-          "timeout": 15000
-        }
-      },
-      "credentials": {
-        "httpHeaderAuth": {
-          "id": "COecLlGgnMP2e7DQ",
-          "name": "Roey - CloudChat API (אורה)"
-        }
-      },
-      "onError": "continueRegularOutput"
-    },
-    {
-      "id": "9affcb30-c83e-4767-b72a-11e51ffb28af",
-      "name": "בחירת השיחה האחרונה",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        1780,
-        160
-      ],
-      "parameters": {
-        "jsCode": "// several test chats can share a phone: the conversation that is happening now has the latest interaction\nconst list = ($input.first().json.data || []).slice();\nlist.sort((a, b) => String(b.last_interaction || '').localeCompare(String(a.last_interaction || '')));\nreturn [{ json: { user_ns: list[0]?.user_ns || null } }];"
-      }
-    },
-    {
-      "id": "65defe84-67e9-4044-9172-576d6aea6bf2",
-      "name": "CloudChat · פתיחת השיחה לנציגה",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
-      "position": [
-        2000,
-        160
-      ],
-      "parameters": {
-        "method": "POST",
-        "url": "https://console.thecloud.chat/api/subscriber/move-chat-to",
-        "authentication": "genericCredentialType",
-        "genericAuthType": "httpHeaderAuth",
-        "options": {
-          "timeout": 15000
-        },
-        "sendBody": true,
-        "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ user_ns: $json.user_ns, status: 'open' }) }}"
-      },
-      "credentials": {
-        "httpHeaderAuth": {
-          "id": "COecLlGgnMP2e7DQ",
-          "name": "Roey - CloudChat API (אורה)"
-        }
-      },
-      "onError": "continueRegularOutput"
-    },
-    {
-      "id": "2e8c43bd-4637-418a-9c33-a476ed0dd9e4",
-      "name": "CloudChat · תגית סיבה",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
-      "position": [
-        2220,
-        160
-      ],
-      "parameters": {
-        "method": "POST",
-        "url": "https://console.thecloud.chat/api/subscriber/add-tag-by-name",
-        "authentication": "genericCredentialType",
-        "genericAuthType": "httpHeaderAuth",
-        "options": {
-          "timeout": 15000
-        },
-        "sendBody": true,
-        "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ user_ns: $('בחירת השיחה האחרונה').first().json.user_ns, tag_name: $('צריך נציגה? · פנייה').first().json.tag }) }}"
-      },
-      "credentials": {
-        "httpHeaderAuth": {
-          "id": "COecLlGgnMP2e7DQ",
-          "name": "Roey - CloudChat API (אורה)"
-        }
-      },
-      "onError": "continueRegularOutput"
-    },
-    {
       "id": "ace92439-bb9e-41c9-9edf-d36374253c91",
       "name": "תשובה סופית · פנייה",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        2660,
+        1780,
         260
       ],
       "parameters": {
@@ -523,33 +426,90 @@
       }
     },
     {
-      "id": "80a9fa89-aae7-4766-a649-bbe114e5045f",
-      "name": "CloudChat · שיוך לנציגה התורנית",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
+      "id": "63553f91-ec1d-495a-a945-ca72fe97a263",
+      "name": "העברה לנציגה · פנייה",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
       "position": [
-        2440,
+        1560,
         160
       ],
       "parameters": {
-        "method": "POST",
-        "url": "https://console.thecloud.chat/api/subscriber/assign-agent",
-        "authentication": "genericCredentialType",
-        "genericAuthType": "httpHeaderAuth",
-        "options": {
-          "timeout": 15000
+        "workflowId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "FaanuXtOrZHpBO16"
         },
-        "sendBody": true,
-        "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ user_ns: $('בחירת השיחה האחרונה').first().json.user_ns, agent_id: $('צריך נציגה? · פנייה').first().json.agent_id }) }}"
-      },
-      "credentials": {
-        "httpHeaderAuth": {
-          "id": "COecLlGgnMP2e7DQ",
-          "name": "Roey - CloudChat API (אורה)"
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "mode": "once",
+        "options": {
+          "waitForSubWorkflow": false
         }
       },
       "onError": "continueRegularOutput"
+    },
+    {
+      "id": "e4919423-447a-4361-afd7-e163b8500383",
+      "name": "התראה לצוות · תור",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1120,
+        700
+      ],
+      "parameters": {
+        "jsCode": "// the CRM is down: the customer may need a person, and the dashboard cannot show it\nreturn [{ json: { raw_phone: String($('Webhook · התור הבא').first().json.body?.phone ?? '').trim(), tag: 'CRM נכשל - לטפל ידנית' } }];"
+      }
+    },
+    {
+      "id": "21ec4c38-a140-4df1-8ba8-aabb8a0113a9",
+      "name": "העברה לנציגה · תור",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        1340,
+        700
+      ],
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "FaanuXtOrZHpBO16"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "mode": "once",
+        "options": {
+          "waitForSubWorkflow": false
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "4dc2f976-555d-40c3-a52b-c222edbbb71c",
+      "name": "תשובה סופית · תור",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1560,
+        700
+      ],
+      "parameters": {
+        "jsCode": "return [{ json: { response: $('כשל · תור').first().json.response } }];"
+      }
     }
   ],
   "connections": {
@@ -717,7 +677,7 @@
       "main": [
         [
           {
-            "node": "החזרה לסוכן · תור",
+            "node": "התראה לצוות · תור",
             "type": "main",
             "index": 0
           }
@@ -750,7 +710,7 @@
       "main": [
         [
           {
-            "node": "CloudChat · איתור השיחה",
+            "node": "העברה לנציגה · פנייה",
             "type": "main",
             "index": 0
           }
@@ -758,50 +718,6 @@
         [
           {
             "node": "תשובה סופית · פנייה",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "CloudChat · איתור השיחה": {
-      "main": [
-        [
-          {
-            "node": "בחירת השיחה האחרונה",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "בחירת השיחה האחרונה": {
-      "main": [
-        [
-          {
-            "node": "CloudChat · פתיחת השיחה לנציגה",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "CloudChat · פתיחת השיחה לנציגה": {
-      "main": [
-        [
-          {
-            "node": "CloudChat · תגית סיבה",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "CloudChat · תגית סיבה": {
-      "main": [
-        [
-          {
-            "node": "CloudChat · שיוך לנציגה התורנית",
             "type": "main",
             "index": 0
           }
@@ -819,11 +735,44 @@
         ]
       ]
     },
-    "CloudChat · שיוך לנציגה התורנית": {
+    "העברה לנציגה · פנייה": {
       "main": [
         [
           {
             "node": "תשובה סופית · פנייה",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "התראה לצוות · תור": {
+      "main": [
+        [
+          {
+            "node": "העברה לנציגה · תור",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "העברה לנציגה · תור": {
+      "main": [
+        [
+          {
+            "node": "תשובה סופית · תור",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "תשובה סופית · תור": {
+      "main": [
+        [
+          {
+            "node": "החזרה לסוכן · תור",
             "type": "main",
             "index": 0
           }
@@ -834,6 +783,7 @@
   "settings": {
     "executionOrder": "v1",
     "saveDataSuccessExecution": "all",
-    "saveDataErrorExecution": "all"
+    "saveDataErrorExecution": "all",
+    "errorWorkflow": "6tgTESvRiq0H4L7F"
   }
 }

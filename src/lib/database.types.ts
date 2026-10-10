@@ -199,6 +199,33 @@ export type Database = {
           },
         ]
       }
+      integration_incidents: {
+        Row: {
+          created_at: string
+          details: Json
+          id: number
+          message: string
+          node: string | null
+          source: string
+        }
+        Insert: {
+          created_at?: string
+          details?: Json
+          id?: never
+          message: string
+          node?: string | null
+          source: string
+        }
+        Update: {
+          created_at?: string
+          details?: Json
+          id?: never
+          message?: string
+          node?: string | null
+          source?: string
+        }
+        Relationships: []
+      }
       staff: {
         Row: {
           created_at: string
@@ -380,6 +407,15 @@ export type Database = {
         Returns: Json
       }
       agent_next_appointment: { Args: { p_phone: string }; Returns: Json }
+      agent_report_incident: {
+        Args: {
+          p_details?: Json
+          p_message: string
+          p_node: string
+          p_source: string
+        }
+        Returns: Json
+      }
       can_write: { Args: never; Returns: boolean }
       current_staff_role: {
         Args: never

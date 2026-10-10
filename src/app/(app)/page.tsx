@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { CalendarPlus, Headset, MessageCirclePlus, UserPlus } from "lucide-react";
+import { CalendarPlus, Headset, MessageCirclePlus, TriangleAlert, UserPlus } from "lucide-react";
 import { requireStaff } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
-import { addDays, ageLabel, formatTime, isoDateInIsrael, isOverdue, TZ } from "@/lib/format";
+import { addDays, ageLabel, formatTime, hoursAgoIso, isoDateInIsrael, isOverdue, TZ } from "@/lib/format";
 import { appointmentStatus, cancelReason, label, ticketStatus } from "@/lib/labels";
 import { Chip, EmptyState, Ltr, PageHeader, Section, Stat } from "@/components/ui";
 
@@ -26,7 +26,7 @@ export default async function DashboardPage() {
   const supabase = await createClient();
   const today = isoDateInIsrael();
 
-  const [{ data: stats, error }, { data: latest }, { data: todayAppts }, { count: mine }, { data: humanRequests }] = await Promise.all([
+  const [{ data: stats, error }, { data: latest }, { data: todayAppts }, { count: mine }, { data: humanRequests }, { data: incidents }] = await Promise.all([
     supabase.rpc("dashboard_stats"),
     supabase
       .from("tickets")
@@ -49,6 +49,13 @@ export default async function DashboardPage() {
       .eq("priority", "urgent")
       .eq("status", "new")
       .order("created_at"),
+    // n8n reports integration failures here (error workflow, failed CloudChat handoff)
+    supabase
+      .from("integration_incidents")
+      .select("id, source, node, message, created_at")
+      .gte("created_at", hoursAgoIso(24))
+      .order("created_at", { ascending: false })
+      .limit(5),
   ]);
   if (error) throw new Error(error.message);
   const s = stats as Stats;
@@ -89,6 +96,26 @@ export default async function DashboardPage() {
                   <span className="min-w-0 flex-1 truncate text-sm text-ink-soft">{t.subject}</span>
                   <span className="text-[13px] text-ink-soft">{ageLabel(t.created_at)}</span>
                 </Link>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
+      {!!incidents?.length && (
+        <section className="card mb-5 border-tone-red p-4" aria-labelledby="incidents">
+          <h2 id="incidents" className="mb-1 flex items-center gap-2 font-semibold text-tone-red">
+            <TriangleAlert size={20} aria-hidden /> תקלה בחיבור לסוכן · {incidents.length}
+          </h2>
+          <p className="mb-2 text-sm text-ink-soft">ב-24 השעות האחרונות. פניות מהזמן הזה כדאי לבדוק גם ב-CloudChat.</p>
+          <ul className="flex flex-col">
+            {incidents.map((i) => (
+              <li key={i.id} className="flex min-h-11 flex-wrap items-center gap-x-2 gap-y-1 border-b border-line py-2 last:border-0">
+                <span className="text-[13px] text-ink-soft">{ageLabel(i.created_at)}</span>
+                <span className="font-medium">{i.node ?? i.source}</span>
+                <span className="min-w-0 flex-1 truncate text-sm text-ink-soft">
+                  {i.message.split(/(0\d{1,2}-?\d{3}-?\d{4})/).map((part, k) => (k % 2 ? <Ltr key={k}>{part}</Ltr> : part))}
+                </span>
               </li>
             ))}
           </ul>

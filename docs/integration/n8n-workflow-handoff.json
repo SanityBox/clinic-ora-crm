@@ -1,0 +1,353 @@
+{
+  "name": "Roey - קליניקת אורה · העברה לנציגה",
+  "nodes": [
+    {
+      "id": "c43750a3-47cb-41ee-a660-d8c58359657a",
+      "name": "קלט · העברה",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "inputSource": "passthrough"
+      }
+    },
+    {
+      "id": "5e482370-027c-4049-b919-26566267ed02",
+      "name": "נציגה תורנית",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        220,
+        0
+      ],
+      "parameters": {
+        "jsCode": "// CloudChat team member who gets the desktop alert for chats assigned to her (the clinic: Rotem; this demo workspace has one member, Roey)\nconst ON_DUTY_AGENT_ID = 296139;\nconst i = $input.first().json;\nreturn [{ json: { raw_phone: i.raw_phone, tag: i.tag, agent_id: ON_DUTY_AGENT_ID } }];"
+      }
+    },
+    {
+      "id": "d4090a41-7d96-4bdb-bd70-ef96f629083b",
+      "name": "CloudChat · איתור השיחה",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        440,
+        0
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "=https://console.thecloud.chat/api/subscribers?user_field_ns=f263073v17864389&user_field_value={{ encodeURIComponent($json.raw_phone) }}&limit=10",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {
+          "timeout": 15000
+        }
+      },
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "COecLlGgnMP2e7DQ",
+          "name": "Roey - CloudChat API (אורה)"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "6ee436be-c861-48bc-8b08-f0fc1ede5773",
+      "name": "בחירת השיחה האחרונה",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        660,
+        0
+      ],
+      "parameters": {
+        "jsCode": "// several test chats can share a phone: the conversation that is happening now has the latest interaction\nconst list = ($input.first().json.data || []).slice();\nlist.sort((a, b) => String(b.last_interaction || '').localeCompare(String(a.last_interaction || '')));\nreturn [{ json: { user_ns: list[0]?.user_ns || null } }];"
+      }
+    },
+    {
+      "id": "3c4f54d9-c789-45d8-96d7-b76488517244",
+      "name": "CloudChat · פתיחת השיחה לנציגה",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        880,
+        0
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "https://console.thecloud.chat/api/subscriber/move-chat-to",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {
+          "timeout": 15000
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ user_ns: $json.user_ns, status: 'open' }) }}"
+      },
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "COecLlGgnMP2e7DQ",
+          "name": "Roey - CloudChat API (אורה)"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "25ecc930-8af3-47ab-9500-bef3b663729e",
+      "name": "CloudChat · תגית סיבה",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1100,
+        0
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "https://console.thecloud.chat/api/subscriber/add-tag-by-name",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {
+          "timeout": 15000
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ user_ns: $('בחירת השיחה האחרונה').first().json.user_ns, tag_name: $('נציגה תורנית').first().json.tag }) }}"
+      },
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "COecLlGgnMP2e7DQ",
+          "name": "Roey - CloudChat API (אורה)"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "e06cf51a-0a3d-4ff2-89e3-1c741a4756ab",
+      "name": "CloudChat · שיוך לנציגה התורנית",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1320,
+        0
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "https://console.thecloud.chat/api/subscriber/assign-agent",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {
+          "timeout": 15000
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ user_ns: $('בחירת השיחה האחרונה').first().json.user_ns, agent_id: $('נציגה תורנית').first().json.agent_id }) }}"
+      },
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "COecLlGgnMP2e7DQ",
+          "name": "Roey - CloudChat API (אורה)"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "4d747180-8bdf-483f-960c-8c1b5f935900",
+      "name": "בדיקת ההעברה",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1540,
+        0
+      ],
+      "parameters": {
+        "jsCode": "// a handoff nobody sees is a lost customer: any failed step is reported to the CRM dashboard\nconst steps = ['CloudChat · איתור השיחה', 'CloudChat · פתיחת השיחה לנציגה', 'CloudChat · תגית סיבה', 'CloudChat · שיוך לנציגה התורנית'];\nconst failed = steps.filter((s) => { const j = $(s).first().json; return j.error || (j.status && j.status !== 'ok'); });\nif (!$('בחירת השיחה האחרונה').first().json.user_ns) failed.unshift('לא נמצאה שיחה עם הטלפון');\nconst i = $('נציגה תורנית').first().json;\nif (!failed.length) return [{ json: { report: false } }];\nreturn [{ json: { report: true, p_source: 'העברה לנציגה ב-CloudChat', p_node: failed[0],\n  p_message: `ההעברה לנציגה נכשלה (${i.tag}). טלפון ${i.raw_phone}. צריך לחזור ללקוחה ידנית.`,\n  p_details: { failed, raw_phone: i.raw_phone, tag: i.tag } } }];"
+      }
+    },
+    {
+      "id": "b3ebcabf-a267-4c49-ab96-8cf01d9dcbd5",
+      "name": "לדווח?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1760,
+        0
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "f47c04eb-f4b7-4a27-8966-459365d89381",
+              "leftValue": "={{ $json.report }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "d31a7f07-8d2a-48e0-902f-03473c95a9c5",
+      "name": "CRM · דיווח תקלה",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1980,
+        -100
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "https://sepxjnntftgzgjfadbgn.supabase.co/rest/v1/rpc/agent_report_incident",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "<SUPABASE_PUBLISHABLE_KEY>"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ p_source: $json.p_source, p_node: $json.p_node, p_message: $json.p_message, p_details: $json.p_details }) }}",
+        "options": {
+          "timeout": 15000
+        }
+      },
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "Cc2m5CGFkJs0bCvH",
+          "name": "Roey - קליניקת אורה · מפתח CRM"
+        }
+      },
+      "onError": "continueRegularOutput",
+      "retryOnFail": true,
+      "maxTries": 2,
+      "waitBetweenTries": 2000
+    }
+  ],
+  "connections": {
+    "קלט · העברה": {
+      "main": [
+        [
+          {
+            "node": "נציגה תורנית",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "נציגה תורנית": {
+      "main": [
+        [
+          {
+            "node": "CloudChat · איתור השיחה",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "CloudChat · איתור השיחה": {
+      "main": [
+        [
+          {
+            "node": "בחירת השיחה האחרונה",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "בחירת השיחה האחרונה": {
+      "main": [
+        [
+          {
+            "node": "CloudChat · פתיחת השיחה לנציגה",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "CloudChat · פתיחת השיחה לנציגה": {
+      "main": [
+        [
+          {
+            "node": "CloudChat · תגית סיבה",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "CloudChat · תגית סיבה": {
+      "main": [
+        [
+          {
+            "node": "CloudChat · שיוך לנציגה התורנית",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "CloudChat · שיוך לנציגה התורנית": {
+      "main": [
+        [
+          {
+            "node": "בדיקת ההעברה",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "בדיקת ההעברה": {
+      "main": [
+        [
+          {
+            "node": "לדווח?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "לדווח?": {
+      "main": [
+        [
+          {
+            "node": "CRM · דיווח תקלה",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "saveDataSuccessExecution": "all",
+    "saveDataErrorExecution": "all",
+    "errorWorkflow": "6tgTESvRiq0H4L7F"
+  }
+}

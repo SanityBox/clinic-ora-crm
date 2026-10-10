@@ -1,0 +1,99 @@
+{
+  "name": "Roey - קליניקת אורה · שגיאות",
+  "nodes": [
+    {
+      "id": "6b7976d3-1796-436e-88b6-d4e04ec79760",
+      "name": "Error Trigger",
+      "type": "n8n-nodes-base.errorTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {}
+    },
+    {
+      "id": "42526283-50fe-4a00-a725-abcbba9981bc",
+      "name": "סיכום השגיאה",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        220,
+        0
+      ],
+      "parameters": {
+        "jsCode": "const e = $input.first().json;\nconst ex = e.execution || {};\nreturn [{ json: { p_source: (e.workflow && e.workflow.name) || 'n8n', p_node: ex.lastNodeExecuted || null,\n  p_message: String((ex.error && ex.error.message) || 'שגיאה לא ידועה').slice(0, 900),\n  p_details: { execution_id: ex.id || null, url: ex.url || null, mode: ex.mode || null } } }];"
+      }
+    },
+    {
+      "id": "cc716fb1-191c-4623-a4d2-cf54154a9401",
+      "name": "CRM · דיווח תקלה",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        440,
+        0
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "https://sepxjnntftgzgjfadbgn.supabase.co/rest/v1/rpc/agent_report_incident",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "<SUPABASE_PUBLISHABLE_KEY>"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json) }}",
+        "options": {
+          "timeout": 15000
+        }
+      },
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "Cc2m5CGFkJs0bCvH",
+          "name": "Roey - קליניקת אורה · מפתח CRM"
+        }
+      },
+      "onError": "continueRegularOutput",
+      "retryOnFail": true,
+      "maxTries": 2,
+      "waitBetweenTries": 2000
+    }
+  ],
+  "connections": {
+    "Error Trigger": {
+      "main": [
+        [
+          {
+            "node": "סיכום השגיאה",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "סיכום השגיאה": {
+      "main": [
+        [
+          {
+            "node": "CRM · דיווח תקלה",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "saveDataSuccessExecution": "all",
+    "saveDataErrorExecution": "all"
+  }
+}
