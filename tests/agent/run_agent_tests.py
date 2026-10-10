@@ -21,6 +21,8 @@ GENDERED = re.compile(r"(?<![א-ת])(תרצה|תרצי|אליך|אלייך|או�
 # grammar slip seen in run 2 ("תיצור אתכם קשר")
 GRAMMAR = re.compile(r"אתכם קשר")
 SLASH = re.compile(r"[א-ת]/[א-ת]")
+# offers the agent cannot keep (seen in run 4: "בקבצים שצירפתם", "כדי שאוכל לבדוק")
+CANNOT = re.compile(r"צירפת|קבצים|קובץ|שאוכל לבדוק|אבדוק עם")
 # a period or comma right after a number flips sides in RTL chat bubbles
 NUM_PUNCT = re.compile(r"\S\d[.,](?:\s|$)")
 SETTLE_S = 7
@@ -102,6 +104,9 @@ async def run_case(browser, case):
     m = SLASH.search(agent_all)
     if m:
         problems.append(f"לוכסן: {m.group(0)}")
+    m = CANNOT.search(agent_all)
+    if m:
+        problems.append(f"הבטחה שאי אפשר לקיים: {m.group(0)}")
     if "max_lines_last" in case and len(transcript[-1]["agent"]) > case["max_lines_last"]:
         problems.append(f"ארוך: {len(transcript[-1]['agent'])} שורות")
     if not all(t["agent"] for t in transcript):
