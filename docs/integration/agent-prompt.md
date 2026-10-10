@@ -3,6 +3,8 @@
 ארבעה חלקים, לפי השדות ב-AI Hub של CloudChat (Persona & Role · Skills · Product & Service Information · Constraints).
 המידע המשתנה (תורים, מספרי פנייה) מגיע מפונקציות. המידע היציב והמפורט נמצא במאגר הידע (`knowledge-base.md`).
 
+**הגדרות הסוכן ב-CloudChat:** ספק OpenAI - Responses, מודל ברירת המחדל gpt-4.1. מאגר ידע של AI בשם "Roey - קליניקת אורה", מעל Vector Store בשם "Roey - קליניקת אורה · ידע", שבו הקובץ `knowledge-base.md`. חיפוש באינטרנט כבוי. פונקציות AI: `open_service_ticket`, `request_human`, `get_next_appointment`.
+
 ---
 
 ## Persona & Role (עד 2,000 תווים)

@@ -20,7 +20,7 @@
 | מנהלת מורידה את עצמה מתפקיד מנהלת | מנהלת | ✓ נחסם, `cannot_demote_self` (`BR-12`) |
 | אורח לא מחובר (מפתח ציבורי בלבד) קורא לקוחות | anon | ✓ נחסם, אין הרשאה לטבלה |
 | מסך ראשי: המספרים מול ספירה ידנית | מנהלת | ✓ 5 חדשות, 3 בטיפול, 4 לא משויכות, 3 חורגות |
-| Supabase Security Advisor | | ⚠ נשארו 2 אזהרות מכוונות: `agent_create_ticket` ו-`agent_next_appointment` פתוחות ל-anon, כי n8n קורא להן עם המפתח הציבורי. השער האמיתי הוא בדיקת `x-agent-key` בתוך הפונקציה (נבדק: בלי מפתח → `unauthorized`). |
+| Supabase Security Advisor | | ⚠ נשארו 3 אזהרות מכוונות (הרצה חוזרת ב-10.10): `agent_create_ticket`, `agent_next_appointment` ו-`agent_report_incident` פתוחות ל-anon, כי n8n קורא להן עם המפתח הציבורי. השער האמיתי הוא בדיקת `x-agent-key` בתוך הפונקציה (נבדק: בלי מפתח → `unauthorized`). |
 
 ## 2. ממשק לסוכן (n8n ← CRM)
 
@@ -56,7 +56,7 @@
 | הטמעת האתר ב-iframe (clickjacking) | ✓ נחסם: `X-Frame-Options: DENY` + `frame-ancestors 'none'` |
 | כותרות `nosniff`, `Referrer-Policy`, `Permissions-Policy` | ✓ חוזרות בכל תשובה |
 | server actions בלי הרשאה | ✓ כל פעולה בודקת תפקיד, וה-RLS בודק שוב |
-| advisors של Supabase | ✓ רק האזהרות המכוונות על `agent_*` (מוגנות במפתח). הגנה מסיסמאות שדלפו: ⚠ זמינה רק בתוכנית בתשלום |
+| advisors של Supabase | ✓ רק האזהרות המכוונות על שלוש פונקציות `agent_*` (מוגנות במפתח), ו-`resolve_incident` / `current_staff_role` למשתמשות מחוברות (בודקות תפקיד בפנים). הגנה מסיסמאות שדלפו: ⚠ זמינה רק בתוכנית בתשלום |
 
 ## 3ב. בדיקה אוטומטית בדפדפן (10.10.2026, `tests/e2e/crm_e2e.py`)
 
