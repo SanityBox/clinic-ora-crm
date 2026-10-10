@@ -18,7 +18,7 @@ function Saved({ state }: { state: { error?: string } | null }) {
 }
 
 export function StaffRowForm({ row, isMe }: { row: StaffRow; isMe: boolean }) {
-  const [state, action] = useActionState(updateStaff, null);
+  const [state, action, pending] = useActionState(updateStaff, null);
   return (
     <form action={action} className="grid gap-3 border-b border-line py-3 last:border-0 sm:grid-cols-[1.4fr_1fr_1fr_auto_auto] sm:items-center">
       <input type="hidden" name="id" value={row.id} />
@@ -47,7 +47,7 @@ export function StaffRowForm({ row, isMe }: { row: StaffRow; isMe: boolean }) {
         פעילה
       </label>
       <div className="flex flex-col items-start gap-1">
-        <SubmitButton className="btn btn-secondary min-h-11 text-sm">שמירה</SubmitButton>
+        <SubmitButton pending={pending} className="btn btn-secondary min-h-11 text-sm">שמירה</SubmitButton>
         <Saved state={state} />
       </div>
     </form>
@@ -55,7 +55,7 @@ export function StaffRowForm({ row, isMe }: { row: StaffRow; isMe: boolean }) {
 }
 
 export function TreatmentRowForm({ row }: { row?: TreatmentRow }) {
-  const [state, action] = useActionState(saveTreatment, null);
+  const [state, action, pending] = useActionState(saveTreatment, null);
   return (
     <form action={action} className="grid grid-cols-2 gap-3 border-b border-line py-3 last:border-0 sm:grid-cols-[2fr_1fr_1fr_auto_auto] sm:items-end">
       {row && <input type="hidden" name="id" value={row.id} />}
@@ -76,7 +76,7 @@ export function TreatmentRowForm({ row }: { row?: TreatmentRow }) {
         פעיל
       </label>
       <div className="flex flex-col items-start gap-1">
-        <SubmitButton className="btn btn-secondary min-h-11 text-sm">{row ? "שמירה" : "הוספה"}</SubmitButton>
+        <SubmitButton pending={pending} className="btn btn-secondary min-h-11 text-sm">{row ? "שמירה" : "הוספה"}</SubmitButton>
         <Saved state={state} />
       </div>
     </form>

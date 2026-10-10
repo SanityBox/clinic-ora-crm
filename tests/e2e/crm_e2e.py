@@ -78,6 +78,22 @@ async def happy_path(page):
     await page.click("text=מחיקת הלקוחה")
     await page.wait_for_url(re.compile(r"/customers(\?|$)"), timeout=20000)
     steps.append(("מחיקה (BR-14)", "/customers" in page.url))
+    # double click on save: the button is disabled while pending, so exactly one customer and no duplicate-phone error
+    await page.goto(BASE + "/customers/new", wait_until="networkidle")
+    await page.fill("#full_name", "לחיצה כפולה E2E")
+    await page.fill("#phone", "054-999-0002")
+    await page.dblclick("form:has(#full_name) button[type=submit]")
+    await page.wait_for_url(re.compile(r"/customers/[0-9a-f-]{36}"), timeout=20000)
+    card = page.url.split("?")[0]
+    no_error = "כבר שייך" not in await page.inner_text("body")
+    await page.goto(BASE + "/customers?q=0549990002", wait_until="networkidle")
+    # the list renders each customer twice (table on desktop, cards on phone), so count distinct cards
+    count = await page.evaluate("""() => new Set([...document.querySelectorAll("a[href^='/customers/']")]
+      .filter(a => a.textContent.includes('לחיצה כפולה E2E')).map(a => a.getAttribute('href'))).size""")
+    steps.append(("לחיצה כפולה על שמירה יוצרת רשומה אחת", no_error and count == 1 or f"error={not no_error} count={count}"))
+    await page.goto(card, wait_until="networkidle")
+    await page.click("text=מחיקת הלקוחה")
+    await page.wait_for_url(re.compile(r"/customers(\?|$)"), timeout=20000)
     return steps
 
 
