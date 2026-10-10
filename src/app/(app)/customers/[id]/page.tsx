@@ -27,7 +27,7 @@ export default async function CustomerCardPage({ params }: PageProps<"/customers
       .order("starts_at", { ascending: false }),
     supabase
       .from("tickets")
-      .select("id, ticket_number, subject, status, priority, created_at, assignee:staff!tickets_assignee_id_fkey(full_name)")
+      .select("id, ticket_number, subject, status, priority, created_at, due_at, assignee:staff!tickets_assignee_id_fkey(full_name)")
       .eq("customer_id", id)
       .order("created_at", { ascending: false }),
     supabase
@@ -152,7 +152,7 @@ export default async function CustomerCardPage({ params }: PageProps<"/customers
             <ul className="flex flex-col">
               {orderedTickets.map((t) => {
                 const st = ticketStatus[t.status as keyof typeof ticketStatus];
-                const overdue = isOverdue(t.created_at, t.status);
+                const overdue = isOverdue(t.due_at, t.status);
                 return (
                   <li key={t.id} className="border-b border-line last:border-0">
                     <Link href={`/tickets/${t.id}`} className="flex flex-wrap items-center gap-x-2 gap-y-1 py-2.5 hover:text-brand">

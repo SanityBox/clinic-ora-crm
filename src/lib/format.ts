@@ -89,10 +89,11 @@ export function ageLabel(iso: string): string {
   return days === 1 ? "אתמול" : `לפני ${days} ימים`;
 }
 
-export const OVERDUE_HOURS = 48;
+export const OVERDUE_BUSINESS_DAYS = 2;
 
-export function isOverdue(createdAt: string, status: string): boolean {
-  return status !== "closed" && Date.now() - new Date(createdAt).getTime() > OVERDUE_HOURS * 3600_000;
+/** BR-11: open past its due_at (opening + 2 business days, Sun-Thu). due_at is computed once in the database (ticket_due_at). */
+export function isOverdue(dueAt: string, status: string): boolean {
+  return status !== "closed" && Date.now() > new Date(dueAt).getTime();
 }
 
 /** BR-06: opening hours. Sun-Thu 09:00-19:00, Fri 09:00-13:00, Sat closed. Returns a warning or null. */

@@ -31,7 +31,7 @@ export default async function DashboardPage() {
     supabase.rpc("dashboard_stats"),
     supabase
       .from("tickets")
-      .select("id, ticket_number, subject, status, priority, source, created_at, customers(full_name), assignee:staff!tickets_assignee_id_fkey(full_name)")
+      .select("id, ticket_number, subject, status, priority, source, created_at, due_at, customers(full_name), assignee:staff!tickets_assignee_id_fkey(full_name)")
       .neq("status", "closed")
       .order("created_at", { ascending: false })
       .limit(8),
@@ -133,7 +133,7 @@ export default async function DashboardPage() {
         <Stat label="קריאות חדשות" value={s.new_count} href="/tickets?status=new" />
         <Stat label="בטיפול" value={s.in_progress_count} href="/tickets?status=in_progress" />
         <Stat label="ממתינות לשיוך" value={s.unassigned_count} tone={s.unassigned_count ? "amber" : undefined} href="/tickets?assignee=none" />
-        <Stat label="חורגות מעל 48 שעות" value={s.overdue_count} tone={s.overdue_count ? "red" : undefined} href="/tickets?overdue=1" />
+        <Stat label="חורגות מעל 2 ימי עסקים" value={s.overdue_count} tone={s.overdue_count ? "red" : undefined} href="/tickets?overdue=1" />
         <Stat label="תורים היום" value={s.today_appointments} href="/appointments?range=today" />
         <Stat
           label="שיעור הברזות · 30 יום"
@@ -215,7 +215,7 @@ export default async function DashboardPage() {
           <ul className="flex flex-col">
             {latest.map((t) => {
               const st = ticketStatus[t.status as keyof typeof ticketStatus];
-              const overdue = isOverdue(t.created_at, t.status);
+              const overdue = isOverdue(t.due_at, t.status);
               return (
                 <li key={t.id} className="border-b border-line last:border-0">
                   <Link href={`/tickets/${t.id}`} className="flex flex-wrap items-center gap-x-2 gap-y-1 py-2.5 hover:text-brand">

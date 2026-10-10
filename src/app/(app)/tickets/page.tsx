@@ -4,7 +4,7 @@ import { MessageSquareText, Plus } from "lucide-react";
 import { requireStaff } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { getFormOptions } from "@/lib/options";
-import { ageLabel, isOverdue, OVERDUE_HOURS, requestTime } from "@/lib/format";
+import { ageLabel, isOverdue, OVERDUE_BUSINESS_DAYS, requestTime } from "@/lib/format";
 import { label, ticketSource, ticketStatus } from "@/lib/labels";
 import { Chip, EmptyState, Ltr, PageHeader } from "@/components/ui";
 
@@ -23,7 +23,7 @@ export default async function TicketsPage({ searchParams }: PageProps<"/tickets"
   const supabase = await createClient();
   let query = supabase
     .from("tickets")
-    .select("id, ticket_number, subject, status, priority, source, created_at, customer_id, customers(full_name), assignee:staff!tickets_assignee_id_fkey(full_name)")
+    .select("id, ticket_number, subject, status, priority, source, created_at, due_at, customer_id, customers(full_name), assignee:staff!tickets_assignee_id_fkey(full_name)")
     .order("created_at", { ascending: false })
     .limit(200);
   if (status === "open") query = query.neq("status", "closed");
@@ -32,7 +32,7 @@ export default async function TicketsPage({ searchParams }: PageProps<"/tickets"
   else if (assignee === "none") query = query.is("assignee_id", null);
   else if (assignee) query = query.eq("assignee_id", assignee);
   if (overdueOnly) {
-    query = query.neq("status", "closed").lt("created_at", new Date(requestTime() - OVERDUE_HOURS * 3600_000).toISOString());
+    query = query.neq("status", "closed").lt("due_at", new Date(requestTime()).toISOString());
   }
 
   const [{ data: tickets, error }, { staff: team }] = await Promise.all([query, getFormOptions()]);
@@ -74,7 +74,7 @@ export default async function TicketsPage({ searchParams }: PageProps<"/tickets"
           ממתינות לשיוך
         </Link>
         <Link href={qs({ overdue: overdueOnly ? "" : "1" })} className={`btn min-h-10 text-sm ${overdueOnly ? "btn-primary" : "btn-secondary"}`}>
-          חורגות (מעל {OVERDUE_HOURS} שעות)
+          חורגות (מעל {OVERDUE_BUSINESS_DAYS} ימי עסקים)
         </Link>
         <form action="/tickets" className="flex gap-2">
           <input type="hidden" name="status" value={status} />
@@ -98,7 +98,7 @@ export default async function TicketsPage({ searchParams }: PageProps<"/tickets"
         <ul className="card divide-y divide-line">
           {tickets.map((t) => {
             const st = ticketStatus[t.status as keyof typeof ticketStatus];
-            const overdue = isOverdue(t.created_at, t.status);
+            const overdue = isOverdue(t.due_at, t.status);
             return (
               <li key={t.id} className={overdue ? "border-s-4 border-s-tone-red" : ""}>
                 <Link href={`/tickets/${t.id}`} className="flex flex-col gap-1 p-3 hover:bg-canvas sm:px-4">

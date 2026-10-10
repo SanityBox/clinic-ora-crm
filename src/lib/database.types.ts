@@ -281,6 +281,7 @@ export type Database = {
           created_by: string | null
           customer_id: string
           description: string
+          due_at: string
           id: string
           priority: Database["public"]["Enums"]["ticket_priority"]
           reported_name: string | null
@@ -297,6 +298,7 @@ export type Database = {
           created_by?: string | null
           customer_id: string
           description: string
+          due_at?: string
           id?: string
           priority?: Database["public"]["Enums"]["ticket_priority"]
           reported_name?: string | null
@@ -313,6 +315,7 @@ export type Database = {
           created_by?: string | null
           customer_id?: string
           description?: string
+          due_at?: string
           id?: string
           priority?: Database["public"]["Enums"]["ticket_priority"]
           reported_name?: string | null
@@ -449,6 +452,7 @@ export type Database = {
       is_admin: { Args: never; Returns: boolean }
       normalize_phone: { Args: { p: string }; Returns: string }
       resolve_incident: { Args: { p_id: number }; Returns: undefined }
+      ticket_due_at: { Args: { p_created: string }; Returns: string }
     }
     Enums: {
       activity_action: "created" | "updated"

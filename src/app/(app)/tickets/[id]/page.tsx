@@ -36,7 +36,7 @@ export default async function TicketPage({ params }: PageProps<"/tickets/[id]">)
   if (!ticket) notFound();
 
   const st = ticketStatus[ticket.status as keyof typeof ticketStatus];
-  const overdue = isOverdue(ticket.created_at, ticket.status);
+  const overdue = isOverdue(ticket.due_at, ticket.status);
   const openedBy = ticket.source === "ai_agent" && !ticket.created_by ? "סוכן AI" : ticket.creator?.full_name ?? "—";
 
   return (
