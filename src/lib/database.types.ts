@@ -15,36 +15,36 @@ export type Database = {
     Tables: {
       activity_log: {
         Row: {
-          action: string
+          action: Database["public"]["Enums"]["activity_action"]
           actor_id: string | null
           actor_label: string
           changes: Json
           created_at: string
           customer_id: string | null
           entity_id: string
-          entity_type: string
+          entity_type: Database["public"]["Enums"]["activity_entity"]
           id: number
         }
         Insert: {
-          action: string
+          action: Database["public"]["Enums"]["activity_action"]
           actor_id?: string | null
           actor_label: string
           changes?: Json
           created_at?: string
           customer_id?: string | null
           entity_id: string
-          entity_type: string
+          entity_type: Database["public"]["Enums"]["activity_entity"]
           id?: never
         }
         Update: {
-          action?: string
+          action?: Database["public"]["Enums"]["activity_action"]
           actor_id?: string | null
           actor_label?: string
           changes?: Json
           created_at?: string
           customer_id?: string | null
           entity_id?: string
-          entity_type?: string
+          entity_type?: Database["public"]["Enums"]["activity_entity"]
           id?: never
         }
         Relationships: [
@@ -235,6 +235,7 @@ export type Database = {
           is_active: boolean
           role: Database["public"]["Enums"]["staff_role"]
           specialty: string | null
+          updated_at: string
         }
         Insert: {
           created_at?: string
@@ -244,6 +245,7 @@ export type Database = {
           is_active?: boolean
           role?: Database["public"]["Enums"]["staff_role"]
           specialty?: string | null
+          updated_at?: string
         }
         Update: {
           created_at?: string
@@ -253,6 +255,7 @@ export type Database = {
           is_active?: boolean
           role?: Database["public"]["Enums"]["staff_role"]
           specialty?: string | null
+          updated_at?: string
         }
         Relationships: []
       }
@@ -344,6 +347,8 @@ export type Database = {
           name: string
           price: number
           sort_order: number
+          created_at: string
+          updated_at: string
         }
         Insert: {
           duration_minutes: number
@@ -352,6 +357,8 @@ export type Database = {
           name: string
           price: number
           sort_order?: number
+          created_at?: string
+          updated_at?: string
         }
         Update: {
           duration_minutes?: number
@@ -360,6 +367,8 @@ export type Database = {
           name?: string
           price?: number
           sort_order?: number
+          created_at?: string
+          updated_at?: string
         }
         Relationships: []
       }
@@ -427,6 +436,8 @@ export type Database = {
       normalize_phone: { Args: { p: string }; Returns: string }
     }
     Enums: {
+      activity_action: "created" | "updated"
+      activity_entity: "customer" | "appointment" | "ticket"
       appointment_status: "scheduled" | "completed" | "cancelled"
       cancel_reason: "customer" | "clinic" | "no_show"
       customer_source:
