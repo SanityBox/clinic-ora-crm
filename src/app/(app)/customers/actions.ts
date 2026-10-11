@@ -70,7 +70,7 @@ export async function deleteCustomer(formData: FormData) {
   const id = str(formData, "id");
   const supabase = await createClient();
   const { error } = await supabase.from("customers").delete().eq("id", id);
-  if (error) redirect(`/customers/${id}?toast=no_permission`);
+  if (error) redirect(`/customers/${id}?toast=${error.code === "42501" ? "no_permission" : "save_failed"}`);
   revalidatePath("/", "layout");
   redirect("/customers?toast=customer_deleted");
 }

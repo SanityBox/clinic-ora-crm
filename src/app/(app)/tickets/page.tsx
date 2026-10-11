@@ -18,8 +18,8 @@ const PAGE_SIZE = 50;
 export default async function TicketsPage({ searchParams }: PageProps<"/tickets">) {
   const staff = await requireStaff();
   const sp = await searchParams;
-  const status: StatusFilter = typeof sp.status === "string" && sp.status in statusFilters ? (sp.status as StatusFilter) : "open";
-  const assignee = typeof sp.assignee === "string" ? sp.assignee : "";
+  const status: StatusFilter = typeof sp.status === "string" && Object.hasOwn(statusFilters, sp.status) ? (sp.status as StatusFilter) : "open";
+  const assignee = typeof sp.assignee === "string" && (sp.assignee === "me" || sp.assignee === "none" || /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(sp.assignee)) ? sp.assignee : "";
   const overdueOnly = sp.overdue === "1";
   const page = Math.max(1, Number(sp.page) || 1);
 

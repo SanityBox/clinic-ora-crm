@@ -51,7 +51,7 @@
         0
       ],
       "parameters": {
-        "jsCode": "const toLocalPhone = (s) => {\n  let d = String(s ?? '').replace(/\\D/g, '');\n  if (d.startsWith('00972')) d = '0' + d.slice(5);\n  else if (d.startsWith('972')) d = '0' + d.slice(3);\n  return /^0(5|7)\\d{8}$/.test(d) || /^0[2-489]\\d{7}$/.test(d) ? d : null;\n};\nconst body = $input.first().json.body || {};\nconst name = String(body.name ?? '').trim();\nconst phone = toLocalPhone(body.phone);\nconst description = String(body.description ?? '').trim();\nconst missing = [];\nif (!name) missing.push('name');\nif (!phone) missing.push('phone');\nif (!description) missing.push('description');\nreturn [{ json: { valid: missing.length === 0, missing, name, phone, description, request_type: String(body.request_type ?? '').trim(), raw_phone: String(body.phone ?? '').trim() } }];"
+        "jsCode": "const toLocalPhone = (s) => {\n  let d = String(s ?? '').replace(/\\D/g, '');\n  if (d.startsWith('00972')) d = '0' + d.slice(5);\n  else if (d.startsWith('972')) d = '0' + d.slice(3);\n  // \"+972 054-...\" keeps the trunk 0 after the country code (same rule as public.normalize_phone)\n  if (d.startsWith('00')) d = d.slice(1);\n  return /^0(5|7)\\d{8}$/.test(d) || /^0[2-489]\\d{7}$/.test(d) ? d : null;\n};\nconst body = $input.first().json.body || {};\nconst name = String(body.name ?? '').trim();\nconst phone = toLocalPhone(body.phone);\nconst description = String(body.description ?? '').trim();\nconst missing = [];\nif (!name) missing.push('name');\nif (!phone) missing.push('phone');\nif (!description) missing.push('description');\nreturn [{ json: { valid: missing.length === 0, missing, name, phone, description, request_type: String(body.request_type ?? '').trim(), raw_phone: String(body.phone ?? '').trim() } }];"
       }
     },
     {
@@ -230,7 +230,7 @@
         560
       ],
       "parameters": {
-        "jsCode": "const toLocalPhone = (s) => {\n  let d = String(s ?? '').replace(/\\D/g, '');\n  if (d.startsWith('00972')) d = '0' + d.slice(5);\n  else if (d.startsWith('972')) d = '0' + d.slice(3);\n  return /^0(5|7)\\d{8}$/.test(d) || /^0[2-489]\\d{7}$/.test(d) ? d : null;\n};\nconst body = $input.first().json.body || {};\nconst phone = toLocalPhone(body.phone);\nreturn [{ json: { valid: Boolean(phone), phone } }];"
+        "jsCode": "const toLocalPhone = (s) => {\n  let d = String(s ?? '').replace(/\\D/g, '');\n  if (d.startsWith('00972')) d = '0' + d.slice(5);\n  else if (d.startsWith('972')) d = '0' + d.slice(3);\n  // \"+972 054-...\" keeps the trunk 0 after the country code (same rule as public.normalize_phone)\n  if (d.startsWith('00')) d = d.slice(1);\n  return /^0(5|7)\\d{8}$/.test(d) || /^0[2-489]\\d{7}$/.test(d) ? d : null;\n};\nconst body = $input.first().json.body || {};\nconst phone = toLocalPhone(body.phone);\nreturn [{ json: { valid: Boolean(phone), phone } }];"
       }
     },
     {

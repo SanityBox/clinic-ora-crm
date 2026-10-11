@@ -74,6 +74,8 @@ export function normalizePhone(input: string): string | null {
   let d = input.replace(/\D/g, "");
   if (d.startsWith("00972")) d = "0" + d.slice(5);
   else if (d.startsWith("972")) d = "0" + d.slice(3);
+  // "+972 054-..." keeps the trunk 0 after the country code
+  if (d.startsWith("00")) d = d.slice(1);
   if (/^0(5|7)\d{8}$/.test(d) || /^0[2-489]\d{7}$/.test(d)) return d;
   return null;
 }
@@ -81,8 +83,12 @@ export function normalizePhone(input: string): string | null {
 /** Digits for a partial phone search: "+972-54-78" -> "054 78"-style digits that match the stored format. */
 export function phoneSearchDigits(input: string): string {
   let d = input.replace(/\D/g, "");
-  if (d.startsWith("00972")) d = "0" + d.slice(5);
-  else if (d.startsWith("972")) d = "0" + d.slice(3);
+  // only a full or explicitly international number has a country code; "9721" is the last 4 digits of a phone
+  if (/^\s*(\+|00)/.test(input) || d.length >= 11) {
+    if (d.startsWith("00972")) d = "0" + d.slice(5);
+    else if (d.startsWith("972")) d = "0" + d.slice(3);
+    if (d.startsWith("00")) d = d.slice(1);
+  }
   return d;
 }
 

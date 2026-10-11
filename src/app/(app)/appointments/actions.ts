@@ -111,5 +111,5 @@ export async function deleteAppointment(formData: FormData) {
   const { error } = await supabase.from("appointments").delete().eq("id", id);
   if (error) redirect(`/appointments/${id}?toast=save_failed`);
   revalidatePath("/", "layout");
-  redirect(`/customers/${customerId}?toast=appointment_saved`);
+  redirect(`/customers/${customerId}?toast=appointment_deleted`);
 }

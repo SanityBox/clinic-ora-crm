@@ -25,9 +25,9 @@ const PAGE_SIZE = 50;
 export default async function AppointmentsPage({ searchParams }: PageProps<"/appointments">) {
   const staff = await requireStaff();
   const sp = await searchParams;
-  const range: Range = typeof sp.range === "string" && sp.range in ranges ? (sp.range as Range) : "today";
-  const status = typeof sp.status === "string" && sp.status in appointmentStatus ? sp.status : "";
-  const therapist = typeof sp.staff === "string" ? sp.staff : "";
+  const range: Range = typeof sp.range === "string" && Object.hasOwn(ranges, sp.range) ? (sp.range as Range) : "today";
+  const status = typeof sp.status === "string" && Object.hasOwn(appointmentStatus, sp.status) ? sp.status : "";
+  const therapist = typeof sp.staff === "string" && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(sp.staff) ? sp.staff : "";
   const page = Math.max(1, Number(sp.page) || 1);
 
   const today = isoDateInIsrael();

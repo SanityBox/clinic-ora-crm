@@ -40,6 +40,7 @@ export default async function DashboardPage() {
       .select("id, starts_at, status, cancel_reason, customers(full_name), treatments(name), staff:staff!appointments_staff_id_fkey(full_name)")
       .gte("starts_at", `${today} 00:00:00 ${TZ}`)
       .lt("starts_at", `${addDays(today, 1)} 00:00:00 ${TZ}`)
+      .neq("status", "cancelled")
       .order("starts_at"),
     supabase.from("tickets").select("id", { count: "exact", head: true }).neq("status", "closed").eq("assignee_id", staff.id),
     // PRD 11.1: someone asked the agent for a person. Shown until a staff member starts handling it.
@@ -135,7 +136,7 @@ export default async function DashboardPage() {
         <Stat label="בטיפול" value={s.in_progress_count} href="/tickets?status=in_progress" />
         <Stat label="ממתינות לשיוך" value={s.unassigned_count} tone={s.unassigned_count ? "amber" : undefined} href="/tickets?assignee=none" />
         <Stat label="חורגות מעל 2 ימי עסקים" value={s.overdue_count} tone={s.overdue_count ? "red" : undefined} href="/tickets?overdue=1" />
-        <Stat label="תורים היום" value={s.today_appointments} href="/appointments?range=today" />
+        <Stat label="תורים היום" value={s.today_appointments} href="/appointments?range=today" hint="בלי מבוטלים" />
         <Stat
           label="שיעור הברזות · 30 יום"
           value={s.no_show_rate === null ? "—" : <Ltr>{`${s.no_show_rate}%`}</Ltr>}

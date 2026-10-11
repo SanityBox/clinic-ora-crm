@@ -83,5 +83,5 @@ export async function deleteTicket(formData: FormData) {
   const { error } = await supabase.from("tickets").delete().eq("id", id);
   if (error) redirect(`/tickets/${id}?toast=save_failed`);
   revalidatePath("/", "layout");
-  redirect("/tickets?toast=ticket_saved");
+  redirect("/tickets?toast=ticket_deleted");
 }
