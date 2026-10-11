@@ -1,9 +1,15 @@
 "use client";
 
-import { useEffect, useRef, useState, useTransition } from "react";
+import { useCallback, useEffect, useRef, useState, useTransition } from "react";
 import { Search, X } from "lucide-react";
 import { searchCustomers, type CustomerOption } from "@/app/(app)/customers/actions";
 import { formatPhone } from "@/lib/format";
+
+/** The "new customer" link fills the field that matches what was typed (same test as customerSearchFilter). */
+function newCustomerHref(q: string): string {
+  const text = q.trim();
+  return `/customers/new?${/^[\d\s\-+().]+$/.test(text) ? "phone" : "name"}=${encodeURIComponent(text)}`;
+}
 
 /** Choose the customer of an appointment or ticket by phone or name (BR-03, BR-04). */
 export function CustomerPicker({ initial, error }: { initial: CustomerOption | null; error?: string }) {
@@ -15,6 +21,15 @@ export function CustomerPicker({ initial, error }: { initial: CustomerOption | n
   const [pending, startTransition] = useTransition();
   const timer = useRef<ReturnType<typeof setTimeout>>(undefined);
 
+  const run = useCallback((query: string) => {
+    startTransition(async () => {
+      const r = await searchCustomers(query);
+      setResults(r.customers);
+      setMore(r.more);
+      setSearched(true);
+    });
+  }, []);
+
   useEffect(() => {
     clearTimeout(timer.current);
     if (q.trim().length < 2) {
@@ -24,16 +39,23 @@ export function CustomerPicker({ initial, error }: { initial: CustomerOption | n
       setSearched(false);
       return;
     }
-    timer.current = setTimeout(() => {
-      startTransition(async () => {
-        const r = await searchCustomers(q);
-        setResults(r.customers);
-        setMore(r.more);
-        setSearched(true);
-      });
-    }, 250);
+    timer.current = setTimeout(() => run(q), 250);
     return () => clearTimeout(timer.current);
-  }, [q]);
+  }, [q, run]);
+
+  // A customer created in another tab (the "new customer" link opens one) shows up on return, without a refresh.
+  useEffect(() => {
+    if (selected || q.trim().length < 2) return;
+    const again = () => {
+      if (document.visibilityState === "visible") run(q);
+    };
+    window.addEventListener("focus", again);
+    document.addEventListener("visibilitychange", again);
+    return () => {
+      window.removeEventListener("focus", again);
+      document.removeEventListener("visibilitychange", again);
+    };
+  }, [q, selected, run]);
 
   if (selected) {
     return (
@@ -90,9 +112,10 @@ export function CustomerPicker({ initial, error }: { initial: CustomerOption | n
           {searched && !pending && results.length === 0 && (
             <li className="px-3 py-2 text-sm text-ink-soft">
               לא נמצאה לקוחה.{" "}
-              <a href={`/customers/new?phone=${encodeURIComponent(q)}`} className="font-medium text-brand underline">
+              <a href={newCustomerHref(q)} target="_blank" rel="noopener" className="font-medium text-brand underline">
                 יצירת לקוחה חדשה
-              </a>
+              </a>{" "}
+              (נפתחת בלשונית חדשה, וכשחוזרים לכאן היא מופיעה בחיפוש)
             </li>
           )}
         </ul>

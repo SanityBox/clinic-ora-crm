@@ -9,10 +9,11 @@ export default async function NewCustomerPage({ searchParams }: PageProps<"/cust
   await requireWriter();
   const sp = await searchParams;
   const phone = typeof sp.phone === "string" ? sp.phone : "";
+  const name = typeof sp.name === "string" ? sp.name : "";
   return (
     <>
       <PageHeader title="לקוחה חדשה" back={{ href: "/customers", label: "לקוחות" }} />
-      <CustomerForm initial={{ phone }} cancelHref="/customers" />
+      <CustomerForm initial={{ phone, full_name: name }} cancelHref="/customers" />
     </>
   );
 }

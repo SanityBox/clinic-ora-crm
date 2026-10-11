@@ -165,6 +165,45 @@ async def overlap_path(page):
     return steps
 
 
+async def new_customer_from_picker(page):
+    """Roey's case (stage 36): "not found" -> create her in a new tab -> back in the form she shows up without a refresh."""
+    steps = []
+    name = "מהבורר E2E"
+    await page.goto(BASE + "/tickets/new", wait_until="networkidle")
+    await page.fill("#customer_search", name)
+    await page.wait_for_selector("text=לא נמצאה לקוחה", timeout=20000)
+    link = page.locator("a:has-text('יצירת לקוחה חדשה')")
+    href, target = await link.get_attribute("href"), await link.get_attribute("target")
+    steps.append(("'יצירת לקוחה חדשה' בלשונית חדשה עם השם", (target == "_blank" and "name=" in href) or f"target={target} href={href}"))
+    tab = await page.context.new_page()
+    tab.on("dialog", lambda d: asyncio.ensure_future(d.accept()))
+    card = None
+    try:
+        await tab.goto(BASE + href, wait_until="networkidle")
+        prefilled = await tab.input_value("#full_name") == name
+        await tab.fill("#phone", "054-999-0005")
+        await tab.click("form:has(#full_name) button[type=submit]")
+        await tab.wait_for_url(re.compile(r"/customers/[0-9a-f-]{36}"), timeout=20000)
+        card = tab.url.split("?")[0]
+        # back to the first tab: the window focus event re-runs the search
+        await page.bring_to_front()
+        await page.evaluate("window.dispatchEvent(new Event('focus'))")
+        option = page.locator("[role=option]", has_text=name)
+        await option.wait_for(timeout=15000)
+        await option.click()
+        chosen = await page.locator("input[name=customer_id]").input_value()
+        steps.append(("הלקוחה החדשה מופיעה בבורר בלי רענון", (prefilled and chosen == card.rsplit("/", 1)[1]) or f"prefilled={prefilled} chosen={chosen}"))
+    except Exception as e:
+        steps.append(("new customer from picker", f"error after {len(steps)} steps: {str(e)[:150]}"))
+    finally:
+        if card:
+            await tab.goto(card, wait_until="networkidle")
+            await tab.click("text=מחיקת הלקוחה")
+            await tab.wait_for_url(re.compile(r"/customers(\?|$)"), timeout=20000)
+        await tab.close()
+    return steps
+
+
 async def main():
     OUT.mkdir(parents=True, exist_ok=True)
     results, steps = [], []
@@ -187,6 +226,10 @@ async def main():
                     steps += await overlap_path(page)
                 except Exception as e:
                     steps.append(("overlap path", f"error: {str(e)[:150]}"))
+                try:
+                    steps += await new_customer_from_picker(page)
+                except Exception as e:
+                    steps.append(("new customer from picker", f"error: {str(e)[:150]}"))
             await ctx.close()
         await browser.close()
     (OUT / "results.json").write_text(json.dumps({"screens": results, "happy_path": steps}, ensure_ascii=False, indent=2), encoding="utf-8")
