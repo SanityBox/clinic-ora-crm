@@ -59,7 +59,7 @@ Use this function when the customer asks about their next or upcoming appointmen
 
 **Workflow:**
 1. External Request ← POST ל-n8n, התשובה ל-`ora_crm_result`.
-2. AI Function Result: `customer_found`, `has_appointment`, `weekday`, `date`, `time`, `treatment`, `message`.
+2. AI Function Result: `customer_found`, `has_appointment`, `checked_phone`, `relative_day`, `weekday`, `date`, `time`, `treatment`, `message`. מאז שלב 38 התשובה אומרת לפי איזה מספר נבדק, ו"היום" או "מחר" לפי שעון ישראל. למשל: "בדקתי לפי 053-5550111: התור הבא היום, יום ראשון 11/10/2026 בשעה 16:00, טיפול פנים קלאסי". כך, אם שני אנשים משתמשים באותה שיחה, רואים מיד לפי איזה מספר נבדק התור.
 3. Set Custom Field: `ora_intent` = `next_appointment`.
 
 ## בשלב שאלה 4 בלבד (לפני החיבור ל-CRM)

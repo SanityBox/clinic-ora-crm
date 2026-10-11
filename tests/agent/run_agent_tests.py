@@ -95,6 +95,15 @@ async def run_case(browser, case):
         m = re.search(rx, agent_all)
         if m:
             problems.append(f"אסור: {m.group(0)}")
+    # the last reply alone, e.g. after another person takes over the chat (case 25)
+    agent_last = "\n".join(transcript[-1]["agent"]) if transcript else ""
+    for rx in case.get("must_last", []):
+        if not re.search(rx, agent_last):
+            problems.append(f"חסר בתשובה האחרונה: {rx}")
+    for rx in case.get("must_not_last", []):
+        m = re.search(rx, agent_last)
+        if m:
+            problems.append(f"אסור בתשובה האחרונה: {m.group(0)}")
     m = GENDERED.search(agent_all)
     if m:
         problems.append(f"לשון לא ניטרלית: {m.group(0)}")
