@@ -142,6 +142,7 @@ export default async function DashboardPage() {
           value={s.no_show_rate === null ? "—" : <Ltr>{`${s.no_show_rate}%`}</Ltr>}
           tone={s.no_show_rate !== null && s.no_show_rate >= 20 ? "red" : undefined}
           hint={`${s.no_show_count} לא הגיעו מתוך ${s.no_show_count + s.attended_count}`}
+          href="/appointments?range=last30&status=no_show"
         />
       </div>
 

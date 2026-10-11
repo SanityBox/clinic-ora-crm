@@ -455,7 +455,7 @@ export type Database = {
       ticket_due_at: { Args: { p_created: string }; Returns: string }
     }
     Enums: {
-      activity_action: "created" | "updated"
+      activity_action: "created" | "updated" | "deleted"
       activity_entity: "customer" | "appointment" | "ticket"
       appointment_status: "scheduled" | "completed" | "cancelled"
       cancel_reason: "customer" | "clinic" | "no_show"

@@ -146,6 +146,16 @@ async def overlap_path(page):
         await page.click("button:has-text('לשמור בכל זאת')")
         await page.wait_for_url(left_form, timeout=20000)
         steps.append(("'לשמור בכל זאת' שומר", True))
+
+        # ★2: deleting an appointment leaves a "deleted" row in the customer's activity log
+        await page.goto(card, wait_until="networkidle")
+        await page.click("a[href^='/appointments/']:not([href*='new'])")
+        await page.wait_for_url(re.compile(r"/appointments/[0-9a-f-]{36}"), timeout=20000)
+        await page.click("text=מחיקת התור")
+        await page.wait_for_url(re.compile(r"/customers/[0-9a-f-]{36}"), timeout=20000)
+        # the toast clears the URL and the card re-renders, so wait for the text instead of reading at once
+        logged = await page.wait_for_selector("text=מחקה תור", timeout=15000) is not None
+        steps.append(("מחיקת תור נרשמת ביומן", logged))
     except Exception as e:
         steps.append(("overlap path", f"error after {len(steps)} steps: {str(e)[:150]}"))
     finally:

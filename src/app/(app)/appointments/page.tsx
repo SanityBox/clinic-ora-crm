@@ -17,16 +17,19 @@ const ranges = {
   week: "7 הימים הקרובים",
   upcoming: "עתידיים",
   past: "עבר",
+  last30: "30 הימים האחרונים",
   all: "הכל",
 } as const;
 type Range = keyof typeof ranges;
 const PAGE_SIZE = 50;
+// ★1: "cancelled" mixes cancellations made in advance with no-shows; this filter is the no-shows alone
+const NO_SHOW = "no_show";
 
 export default async function AppointmentsPage({ searchParams }: PageProps<"/appointments">) {
   const staff = await requireStaff();
   const sp = await searchParams;
   const range: Range = typeof sp.range === "string" && Object.hasOwn(ranges, sp.range) ? (sp.range as Range) : "today";
-  const status = typeof sp.status === "string" && Object.hasOwn(appointmentStatus, sp.status) ? sp.status : "";
+  const status = typeof sp.status === "string" && (Object.hasOwn(appointmentStatus, sp.status) || sp.status === NO_SHOW) ? sp.status : "";
   const therapist = typeof sp.staff === "string" && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(sp.staff) ? sp.staff : "";
   const page = Math.max(1, Number(sp.page) || 1);
 
@@ -43,10 +46,13 @@ export default async function AppointmentsPage({ searchParams }: PageProps<"/app
   if (range === "week") query = query.gte("starts_at", dayStart(today)).lt("starts_at", dayStart(addDays(today, 7)));
   if (range === "upcoming") query = query.gte("starts_at", nowIso);
   if (range === "past") query = query.lt("starts_at", nowIso);
-  if (status) query = query.eq("status", status as Enums<"appointment_status">);
+  // the same window as the no-show rate on the dashboard (dashboard_stats.last30), so the counts match
+  if (range === "last30") query = query.gte("starts_at", new Date(requestTime() - 30 * 86_400_000).toISOString()).lte("starts_at", nowIso);
+  if (status === NO_SHOW) query = query.eq("status", "cancelled").eq("cancel_reason", "no_show");
+  else if (status) query = query.eq("status", status as Enums<"appointment_status">);
   if (therapist) query = query.eq("staff_id", therapist);
   query = query
-    .order("starts_at", { ascending: range !== "past" && range !== "all" })
+    .order("starts_at", { ascending: range === "today" || range === "week" || range === "upcoming" })
     .order("id")
     .range((page - 1) * PAGE_SIZE, page * PAGE_SIZE - 1);
 
@@ -107,6 +113,7 @@ export default async function AppointmentsPage({ searchParams }: PageProps<"/app
           {Object.entries(appointmentStatus).map(([v, s]) => (
             <option key={v} value={v}>{s.label}</option>
           ))}
+          <option value={NO_SHOW}>לא הגיעה</option>
         </select>
         <label className="sr-only" htmlFor="f-staff">מטפלת</label>
         <select id="f-staff" name="staff" defaultValue={therapist} className="input sm:w-44">

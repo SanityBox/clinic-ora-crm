@@ -66,6 +66,7 @@ export const fieldLabel: Record<string, string> = {
   status: "סטטוס",
   cancel_reason: "סיבת ביטול",
   subject: "נושא",
+  ticket_number: "מספר קריאה",
   description: "תיאור",
   assignee_id: "אחראית",
   priority: "עדיפות",

@@ -6,13 +6,14 @@ import { Ltr } from "@/components/ui";
 export type ActivityRow = {
   id: number;
   entity_type: "customer" | "appointment" | "ticket";
-  action: "created" | "updated";
+  action: "created" | "updated" | "deleted";
   changes: Record<string, { from: string | null; to: string | null }>;
   actor_label: string;
   created_at: string;
 };
 
 const entityName = { customer: "כרטיס הלקוחה", appointment: "תור", ticket: "קריאה" } as const;
+const actionVerb = { created: "יצרה", updated: "עדכנה", deleted: "מחקה" } as const;
 
 /** ★2 activity log: who did what and when, with old → new values (PRD 1.5, 5.4). */
 export function ActivityList({ rows }: { rows: ActivityRow[] }) {
@@ -27,12 +28,21 @@ export function ActivityList({ rows }: { rows: ActivityRow[] }) {
           <div className="min-w-0 text-sm">
             <div>
               <span className="font-medium">{r.actor_label}</span>{" "}
-              {r.action === "created" ? "יצרה" : "עדכנה"} {entityName[r.entity_type]}
+              {actionVerb[r.action]} {entityName[r.entity_type]}
               <span className="text-ink-soft">
                 {" · "}
                 <Ltr>{formatDateTime(r.created_at)}</Ltr>
               </span>
             </div>
+            {r.action === "deleted" && (
+              <ul className="mt-0.5 text-ink-soft">
+                {Object.entries(r.changes).map(([field, change]) => (
+                  <li key={field}>
+                    {fieldLabel[field] ?? field}: {displayValue(field, change.from)}
+                  </li>
+                ))}
+              </ul>
+            )}
             {r.action === "updated" && (
               <ul className="mt-0.5 text-ink-soft">
                 {Object.entries(r.changes).map(([field, change]) => (
