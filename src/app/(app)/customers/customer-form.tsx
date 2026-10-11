@@ -1,11 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { useActionState } from "react";
+import { useActionState, useEffect, useState } from "react";
 import { saveCustomer } from "./actions";
 import { Field, FormError } from "@/components/ui";
 import { SubmitButton, submitKeepingFields } from "@/components/client";
 import { customerSource } from "@/lib/labels";
+import { sendPick, type PickedCustomer } from "@/lib/customer-pick";
 
 export type CustomerFormValues = {
   id?: string;
@@ -17,13 +18,44 @@ export type CustomerFormValues = {
   notes?: string | null;
 };
 
-export function CustomerForm({ initial, cancelHref }: { initial: CustomerFormValues; cancelHref: string }) {
+export function CustomerForm({ initial, cancelHref, pickToken }: { initial: CustomerFormValues; cancelHref: string; pickToken?: string }) {
   const [state, action, pending] = useActionState(saveCustomer, null);
   const fe = state?.fieldErrors ?? {};
+  const [pickedExisting, setPickedExisting] = useState<PickedCustomer | null>(null);
+  const [closeBlocked, setCloseBlocked] = useState(false);
+  const picked = state?.picked ?? pickedExisting;
+
+  // stage 37: tell the form that opened this tab which customer to select, then close the tab
+  useEffect(() => {
+    if (!picked || !pickToken) return;
+    sendPick({ token: pickToken, customer: picked });
+    window.close();
+    // still open after a moment: browsers let a script close only a tab that a script opened
+    const t = setTimeout(() => setCloseBlocked(true), 400);
+    return () => clearTimeout(t);
+  }, [picked, pickToken]);
+
+  if (picked && pickToken) {
+    return (
+      <div className="card p-4 sm:p-6" role="status">
+        {closeBlocked ? (
+          <>
+            הלקוחה נשמרה ונבחרה בטופס. אפשר לסגור את הלשונית הזו.{" "}
+            <Link href={`/customers/${picked.id}`} className="font-medium text-brand underline">
+              לכרטיס הלקוחה
+            </Link>
+          </>
+        ) : (
+          "הלקוחה נבחרה בטופס…"
+        )}
+      </div>
+    );
+  }
 
   return (
     <form onSubmit={submitKeepingFields(action)} className="card flex flex-col gap-4 p-4 sm:p-6" noValidate>
       {initial.id && <input type="hidden" name="id" value={initial.id} />}
+      {pickToken && <input type="hidden" name="pick" value={pickToken} />}
       <FormError message={state?.error} />
 
       <div className="grid gap-4 sm:grid-cols-2">
@@ -45,6 +77,21 @@ export function CustomerForm({ initial, cancelHref }: { initial: CustomerFormVal
                     <Link href={`/customers/${state.existingCustomer.id}`} className="font-medium underline">
                       מעבר לכרטיס
                     </Link>
+                    {pickToken && (
+                      <>
+                        {" · "}
+                        <button
+                          type="button"
+                          className="font-medium underline"
+                          onClick={() => {
+                            const c = state.existingCustomer!;
+                            setPickedExisting({ id: c.id, full_name: c.name, phone: c.phone ?? "" });
+                          }}
+                        >
+                          לבחור אותה בטופס
+                        </button>
+                      </>
+                    )}
                   </>
                 )}
               </>

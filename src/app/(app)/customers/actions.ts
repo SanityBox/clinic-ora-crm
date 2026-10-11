@@ -37,7 +37,7 @@ export async function saveCustomer(_prev: ActionState, formData: FormData): Prom
   if (existing) {
     return {
       fieldErrors: { phone: `הטלפון כבר שייך ל${existing.full_name}` },
-      existingCustomer: { id: existing.id, name: existing.full_name },
+      existingCustomer: { id: existing.id, name: existing.full_name, phone: phone! },
     };
   }
 
@@ -62,6 +62,8 @@ export async function saveCustomer(_prev: ActionState, formData: FormData): Prom
   }
 
   revalidatePath("/", "layout");
+  // opened from a form's customer picker: hand the new customer back to that form instead of opening her card
+  if (!id && optional(formData, "pick")) return { picked: { id: savedId!, full_name: fullName, phone: phone! } };
   redirect(`/customers/${savedId}?toast=customer_saved`);
 }
 

@@ -166,43 +166,51 @@ async def overlap_path(page):
 
 
 async def new_customer_from_picker(page):
-    """Roey's case (stage 36): "not found" -> create her in a new tab -> back in the form she shows up without a refresh."""
+    """Roey's case (stages 36-37): "not found" -> "new customer" opens a tab -> save -> the tab closes, she is selected."""
     steps = []
     name = "מהבורר E2E"
-    await page.goto(BASE + "/tickets/new", wait_until="networkidle")
-    await page.fill("#customer_search", name)
-    await page.wait_for_selector("text=לא נמצאה לקוחה", timeout=20000)
-    link = page.locator("a:has-text('יצירת לקוחה חדשה')")
-    href, target = await link.get_attribute("href"), await link.get_attribute("target")
-    steps.append(("'יצירת לקוחה חדשה' בלשונית חדשה עם השם", (target == "_blank" and "name=" in href) or f"target={target} href={href}"))
-    tab = await page.context.new_page()
-    tab.on("dialog", lambda d: asyncio.ensure_future(d.accept()))
-    card = None
+    created_id = None
+
+    async def open_new_customer_tab(query):
+        await page.goto(BASE + "/tickets/new", wait_until="networkidle")
+        await page.fill("#customer_search", query)
+        await page.wait_for_selector("text=לא נמצאה לקוחה", timeout=20000)
+        async with page.expect_popup() as pop:
+            await page.click("a:has-text('יצירת לקוחה חדשה')")
+        tab = await pop.value
+        await tab.wait_for_load_state("networkidle")
+        return tab
+
+    async def selected_id():
+        await page.wait_for_function("document.querySelector('input[name=customer_id]')?.value", timeout=10000)
+        return await page.locator("input[name=customer_id]").input_value()
+
     try:
-        await tab.goto(BASE + href, wait_until="networkidle")
+        tab = await open_new_customer_tab(name)
         prefilled = await tab.input_value("#full_name") == name
         await tab.fill("#phone", "054-999-0005")
+        async with tab.expect_event("close", timeout=20000):
+            await tab.click("form:has(#full_name) button[type=submit]")
+        created_id = await selected_id()
+        shown = name in await page.inner_text("form:has(input[name=customer_id])")
+        steps.append(("לקוחה חדשה מהבורר: הלשונית נסגרת והלקוחה נבחרת", (prefilled and shown) or f"prefilled={prefilled} shown={shown}"))
+
+        # the same phone again: "pick her" selects the existing customer instead of a duplicate
+        tab = await open_new_customer_tab("שם שלא קיים E2E")
+        await tab.fill("#phone", "0549990005")
         await tab.click("form:has(#full_name) button[type=submit]")
-        await tab.wait_for_url(re.compile(r"/customers/[0-9a-f-]{36}"), timeout=20000)
-        card = tab.url.split("?")[0]
-        # back to the first tab: the window focus event re-runs the search
-        await page.bring_to_front()
-        await page.evaluate("window.dispatchEvent(new Event('focus'))")
-        option = page.locator("[role=option]", has_text=name)
-        await option.wait_for(timeout=15000)
-        await option.click()
-        chosen = await page.locator("input[name=customer_id]").input_value()
-        steps.append(("הלקוחה החדשה מופיעה בבורר בלי רענון", (prefilled and chosen == card.rsplit("/", 1)[1]) or f"prefilled={prefilled} chosen={chosen}"))
+        await tab.wait_for_selector("button:has-text('לבחור אותה בטופס')", timeout=20000)
+        async with tab.expect_event("close", timeout=20000):
+            await tab.click("button:has-text('לבחור אותה בטופס')")
+        steps.append(("טלפון קיים: 'לבחור אותה בטופס' בוחר את הקיימת", await selected_id() == created_id))
     except Exception as e:
         steps.append(("new customer from picker", f"error after {len(steps)} steps: {str(e)[:150]}"))
     finally:
-        if card:
-            await tab.goto(card, wait_until="networkidle")
-            await tab.click("text=מחיקת הלקוחה")
-            await tab.wait_for_url(re.compile(r"/customers(\?|$)"), timeout=20000)
-        await tab.close()
+        if created_id:
+            await page.goto(f"{BASE}/customers/{created_id}", wait_until="networkidle")
+            await page.click("text=מחיקת הלקוחה")
+            await page.wait_for_url(re.compile(r"/customers(\?|$)"), timeout=20000)
     return steps
-
 
 async def main():
     OUT.mkdir(parents=True, exist_ok=True)

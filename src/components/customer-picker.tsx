@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState, useTransition } from "react";
 import { Search, X } from "lucide-react";
 import { searchCustomers, type CustomerOption } from "@/app/(app)/customers/actions";
 import { formatPhone } from "@/lib/format";
+import { PICK_CHANNEL, type PickMessage } from "@/lib/customer-pick";
 
 /** The "new customer" link fills the field that matches what was typed (same test as customerSearchFilter). */
 function newCustomerHref(q: string): string {
@@ -20,6 +21,7 @@ export function CustomerPicker({ initial, error }: { initial: CustomerOption | n
   const [searched, setSearched] = useState(false);
   const [pending, startTransition] = useTransition();
   const timer = useRef<ReturnType<typeof setTimeout>>(undefined);
+  const pickToken = useRef<string | null>(null);
 
   const run = useCallback((query: string) => {
     startTransition(async () => {
@@ -42,6 +44,18 @@ export function CustomerPicker({ initial, error }: { initial: CustomerOption | n
     timer.current = setTimeout(() => run(q), 250);
     return () => clearTimeout(timer.current);
   }, [q, run]);
+
+  // stage 37: the new-customer tab this picker opened sends back the customer it created, and she is selected
+  useEffect(() => {
+    const channel = new BroadcastChannel(PICK_CHANNEL);
+    channel.onmessage = (e: MessageEvent<PickMessage>) => {
+      if (!pickToken.current || e.data?.token !== pickToken.current) return;
+      pickToken.current = null;
+      setSelected(e.data.customer);
+      setQ("");
+    };
+    return () => channel.close();
+  }, []);
 
   // A customer created in another tab (the "new customer" link opens one) shows up on return, without a refresh.
   useEffect(() => {
@@ -112,10 +126,21 @@ export function CustomerPicker({ initial, error }: { initial: CustomerOption | n
           {searched && !pending && results.length === 0 && (
             <li className="px-3 py-2 text-sm text-ink-soft">
               לא נמצאה לקוחה.{" "}
-              <a href={newCustomerHref(q)} target="_blank" rel="noopener" className="font-medium text-brand underline">
+              <a
+                href={newCustomerHref(q)}
+                target="_blank"
+                rel="noopener"
+                className="font-medium text-brand underline"
+                onClick={(e) => {
+                  // opened by script (not noopener) so the tab may close itself after saving
+                  e.preventDefault();
+                  pickToken.current = crypto.randomUUID().replace(/-/g, "").slice(0, 16);
+                  window.open(`${newCustomerHref(q)}&pick=${pickToken.current}`, "_blank");
+                }}
+              >
                 יצירת לקוחה חדשה
               </a>{" "}
-              (נפתחת בלשונית חדשה, וכשחוזרים לכאן היא מופיעה בחיפוש)
+              (בלשונית חדשה. אחרי השמירה הלשונית נסגרת והלקוחה נבחרת כאן)
             </li>
           )}
         </ul>

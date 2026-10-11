@@ -4,7 +4,8 @@ export type Overlap = { id: string; kind: "staff" | "customer"; when: string; cu
 export type ActionState = {
   error?: string;
   fieldErrors?: Record<string, string>;
-  existingCustomer?: { id: string; name: string };
+  existingCustomer?: { id: string; name: string; phone?: string };
+  picked?: { id: string; full_name: string; phone: string };
   overlaps?: Overlap[];
   overlapKey?: string;
 } | null;
